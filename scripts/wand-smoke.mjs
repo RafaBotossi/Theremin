@@ -98,6 +98,16 @@ try {
     volume,
   );
   const held = await page.locator("meter").evaluate((e) => e.value);
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    window.hands[1].y = 0.8;
+  });
+  await page.waitForTimeout(700);
+  if (
+    Math.abs((await page.locator("meter").evaluate((e) => e.value)) - held) >
+    0.002
+  )
+    throw Error("Settled volume changed when resting the open hand");
   await page.evaluate(() => {
     window.hands[1].palmOpen = false;
     window.hands[1].y = 0.8;
@@ -127,10 +137,7 @@ try {
   await page.evaluate(() => {
     window.hands[0].straight = false;
   });
-  await page.waitForFunction(
-    () =>
-      window.level() < 0.0001 && document.querySelector("meter").value === 0,
-  );
+  await page.waitForFunction(() => window.level() < 0.0001);
   await page.evaluate(() => {
     window.hands[0].straight = true;
   });

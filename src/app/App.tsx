@@ -29,6 +29,10 @@ export function App() {
   const clipRef = useRef("");
   const running = session.status === "running";
   const r = session.reading;
+  const volume =
+    settings.controlMode === "wand"
+      ? (r.volumeLevel ?? 0)
+      : r.gain / (settings.maxGain || 1);
   function update(s: Settings) {
     const clean = sanitize(s);
     setSettings(clean);
@@ -324,14 +328,9 @@ export function App() {
           </div>
           <div className="volume-label">
             <span>VOLUME</span>
-            <span>{Math.round((r.gain / settings.maxGain) * 100) || 0}%</span>
+            <span>{Math.round(volume * 100)}%</span>
           </div>
-          <meter
-            aria-label="Volume"
-            min="0"
-            max={settings.maxGain || 0.25}
-            value={r.gain}
-          />
+          <meter aria-label="Volume" min="0" max={1} value={volume} />
           <label>
             Timbre
             <select

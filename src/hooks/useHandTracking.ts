@@ -18,6 +18,7 @@ import {
 } from "../mapping/gestureMapping";
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
+import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
 const connections = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -37,7 +38,10 @@ export function useHandTracking(
   current.current = { settings, muted, calibrating };
   const [status, setStatus] = useState<"idle" | "loading" | "running">("idle");
   const [error, setError] = useState("");
-  const [reading, setReading] = useState(emptyReading);
+  const [reading, setReading] = useState(() => ({
+    ...emptyReading,
+    volumeLevel: loadVolume(),
+  }));
   const hands = useRef<Hand[]>([]);
   const frameTime = useRef(-Infinity);
   const engine = useRef<ThereminEngine | null>(null);
@@ -48,7 +52,7 @@ export function useHandTracking(
     stopRef.current();
     stopRef.current = () => {};
     setStatus("idle");
-    setReading(emptyReading);
+    setReading({ ...emptyReading, volumeLevel: loadVolume() });
   };
   useEffect(
     () => () => {
@@ -139,7 +143,8 @@ export function useHandTracking(
         interval = 33;
       let expression = current.current.settings.brightness;
       let wand: Hand | undefined;
-      let heldVolume = 0;
+      const volumeLatch = new VolumeLatch(loadVolume());
+      let heldVolume = volumeLatch.value;
       timer = window.setInterval(() => {
         const now = performance.now();
         if (document.hidden || !gate.fresh(now)) {
@@ -225,11 +230,25 @@ export function useHandTracking(
             );
             frequency = quantize(frequencyAt(t, s.fMin, s.fMax), s.scale);
           } else if (!safe) pitchFilter.reset();
-          if (
-            roles.volume &&
-            (s.controlMode !== "wand" || hasOpenPalm(roles.volume))
-          )
-            heldVolume = volumeControl(roles.volume, s);
+          if (s.controlMode === "wand") {
+            // Never let ambiguous single-hand reassignment overwrite the volume.
+            const confident =
+              !current.current.calibrating &&
+              roles.pitch &&
+              roles.volume &&
+              (s.assignment === "screen" ||
+                (roles.pitch.score >= 0.6 &&
+                  roles.volume.score >= 0.6 &&
+                  roles.pitch.label !== roles.volume.label));
+            const previousVolume = heldVolume;
+            heldVolume = volumeLatch.update(
+              confident && hasOpenPalm(roles.volume!)
+                ? volumeControl(roles.volume!, s)
+                : null,
+              detectedAt,
+            );
+            if (heldVolume !== previousVolume) volumeLatch.save();
+          } else if (roles.volume) heldVolume = volumeControl(roles.volume, s);
           if (safe && (s.controlMode === "wand" || roles.volume)) {
             const t = volumeFilter.update(heldVolume, dt, s.smoothing);
             gain = t * t * s.maxGain;
@@ -296,7 +315,9 @@ export function useHandTracking(
                     ? "NOTA"
                     : h === roles.volume
                       ? hasOpenPalm(h)
-                        ? "VOLUME · PALMA ABERTA"
+                        ? volumeLatch.locked
+                          ? "VOLUME FIXADO"
+                          : "VOLUME · PALMA ABERTA"
                         : "VOLUME MANTIDO"
                       : "ESTIQUE O INDICADOR"
                   : h === roles.pitch
@@ -320,6 +341,7 @@ export function useHandTracking(
             setReading({
               frequency,
               gain,
+              volumeLevel: heldVolume,
               pitch: !!roles.pitch,
               volume: s.controlMode === "wand" || !!roles.volume,
               outside: outsideField(roles.pitch, roles.volume, s),

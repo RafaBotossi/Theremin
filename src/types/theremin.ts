@@ -196,6 +196,7 @@ export function loadSettings(): Settings {
   }
 }
 export interface Reading {
+  volumeLevel?: number;
   frequency: number;
   gain: number;
   pitch: boolean;
