@@ -9,6 +9,8 @@ import {
   isPolyphonic,
   midiFrequency,
   risingNotes,
+  advanceSongTime,
+  guideSongTime,
   type Melody,
   type SongGuide,
 } from "../music/song";
@@ -35,6 +37,8 @@ export function SongPanel({
   const [tracks, setTracks] = useState<Melody[]>([]);
   const [track, setTrack] = useState(0);
   const [speed, setSpeed] = useState(1);
+  const [lookahead, setLookahead] = useState(8);
+  const lastMovingSpeed = useRef(1);
   const [bpm, setBpm] = useState(96);
   const [startMeasure, setStartMeasure] = useState(1);
   const [fermata, setFermata] = useState(2);
@@ -135,7 +139,7 @@ export function SongPanel({
         delta = (now - last) / 1000;
       last = now;
       setTime((old) => {
-        const next = old < 0 ? old + delta : old + delta * speed;
+        const next = advanceSongTime(old, delta, speed);
         if (next >= duration) {
           if (loop) return -3;
           return duration;
@@ -165,13 +169,20 @@ export function SongPanel({
     return () => document.removeEventListener("visibilitychange", pause);
   }, []);
   useEffect(() => {
+    if (speed > 0) lastMovingSpeed.current = speed;
     onGuide(
       enabled
         ? {
             active: true,
             timed: !practice && status !== "done",
             falling:
-              !practice && status !== "done" ? risingNotes(notes, time) : [],
+              !practice && status !== "done"
+                ? risingNotes(
+                    notes,
+                    guideSongTime(time, lastMovingSpeed.current),
+                    lookahead,
+                  )
+                : [],
             listening: playback.listening,
             attack: frame.current?.start ?? null,
             current:
@@ -202,6 +213,7 @@ export function SongPanel({
     playback.listening,
     practice,
     notes,
+    lookahead,
   ]);
   useEffect(
     () => () => {
@@ -350,6 +362,21 @@ export function SongPanel({
             ))}
           </select>
         </label>
+        <label>
+          Antecedência visual
+          <select
+            value={lookahead}
+            onChange={(e) => setLookahead(Number(e.target.value))}
+          >
+            <option value={4}>4 s · subida rápida</option>
+            <option value={8}>8 s · subida suave</option>
+            <option value={12}>12 s · subida bem lenta</option>
+          </select>
+          <small>
+            Tempo na partitura. Aumentar deixa a subida mais lenta; não muda
+            quando tocar.
+          </small>
+        </label>
       </div>
       {choice === "ecstasy" && (
         <>
@@ -406,6 +433,12 @@ export function SongPanel({
             Pausas, ligaduras e valores rítmicos foram transcritos; acordes
             foram reduzidos a uma nota. Na introdução, tocamos o motivo repetido
             do piano.
+          </p>
+          <p>
+            A introdução segue o acompanhamento rápido do piano. Para estudar a
+            melodia, escolha Tema principal · compasso 12 e velocidade de 25% a
+            50%. Reduza Velocidade para ter mais tempo entre as notas;
+            Antecedência visual muda apenas a subida.
           </p>
           <p>
             A partitura indica “Moderately”, sem BPM. A base de {bpm} BPM é

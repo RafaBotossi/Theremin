@@ -9,6 +9,29 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SongPanel } from "../src/components/SongPanel";
 import { defaults, emptyReading } from "../src/types/theremin";
 beforeEach(() => vi.useFakeTimers());
+it("freezes rising notes at zero speed during the countdown", () => {
+  const onGuide = vi.fn();
+  render(
+    <SongPanel
+      settings={defaults}
+      blocked={false}
+      running={false}
+      onGuide={onGuide}
+      onSettings={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("Velocidade (%)"), {
+    target: { value: "25" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
+  act(() => vi.advanceTimersByTime(1000));
+  const notes = onGuide.mock.lastCall?.[0].falling;
+  fireEvent.change(screen.getByLabelText("Velocidade (%)"), {
+    target: { value: "0" },
+  });
+  act(() => vi.advanceTimersByTime(5000));
+  expect(onGuide.mock.lastCall?.[0].falling).toEqual(notes);
+});
 it("nota por nota aguarda acerto e não revela o próximo alvo", () => {
   const onGuide = vi.fn(),
     onSettings = vi.fn();

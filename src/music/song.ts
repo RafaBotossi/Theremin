@@ -19,6 +19,15 @@ export interface SongGuide {
   falling?: { midi: number; start: number; progress: number }[];
   timed?: boolean;
 }
+// Countdown remains three real seconds; any time crossing zero uses song speed.
+export function advanceSongTime(time: number, delta: number, speed: number) {
+  if (speed <= 0) return time;
+  if (time < 0) return time + delta < 0 ? time + delta : (time + delta) * speed;
+  return time + delta * speed;
+}
+export function guideSongTime(time: number, speed: number) {
+  return time < 0 ? time * speed : time;
+}
 // Positions follow the song clock, so pause, speed and looping stay in sync.
 export function risingNotes(notes: SongNote[], time: number, horizon = 4) {
   return notes
