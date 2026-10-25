@@ -234,12 +234,10 @@ export function useHandTracking(
             // Never let ambiguous single-hand reassignment overwrite the volume.
             const confident =
               !current.current.calibrating &&
-              roles.pitch &&
               roles.volume &&
               (s.assignment === "screen" ||
-                (roles.pitch.score >= 0.6 &&
-                  roles.volume.score >= 0.6 &&
-                  roles.pitch.label !== roles.volume.label));
+                (roles.volume.score >= 0.6 &&
+                  roles.volume.label === (s.pitchLeft ? "Left" : "Right")));
             const previousVolume = heldVolume;
             heldVolume = volumeLatch.update(
               confident && hasOpenPalm(roles.volume!)
