@@ -323,6 +323,7 @@ h1 em {
   position: absolute;
   inset: 12px 0 50px;
   pointer-events: none;
+  overflow: hidden;
 }
 .practice-cue {
   position: absolute;
@@ -342,10 +343,10 @@ h1 em {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-left: 1px solid #ffffff18;
+  border-left: 1px solid #ffffff65;
 }
 .note-line.natural {
-  border-color: #ffffff32;
+  border-left: 2px solid #ffffff90;
 }
 .note-line span {
   display: block;
@@ -355,6 +356,12 @@ h1 em {
   border-radius: 3px;
   padding: 3px 2px;
   font-size: 9px;
+  white-space: nowrap;
+  position: relative;
+  z-index: 5;
+}
+.note-line.accidental span {
+  top: 19px;
 }
 .note-line.selected {
   border-color: #67e8c2;
@@ -365,18 +372,18 @@ h1 em {
   background: #67e8c2;
 }
 .note-line.excluded {
-  opacity: 0.2;
+  opacity: 0.5;
 }
 .note-line span:empty {
   display: none;
 }
 .song-note-dot {
   position: absolute;
-  top: 0;
+  top: 52px;
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   display: grid;
   place-items: center;
   font-size: 11px;
@@ -396,6 +403,36 @@ h1 em {
   color: #201a0b;
   box-shadow: 0 0 15px #ffdb7060;
   animation: note-attack 0.15s ease-out;
+}
+.song-hit-line {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  border-top: 2px solid #ffdb70b0;
+  box-shadow: 0 0 12px #ffdb7055;
+}
+.song-hit-line span {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  font-size: 8px;
+  color: #ffdb70;
+  background: #101722dd;
+  padding: 2px 4px;
+}
+.rising-notes {
+  position: absolute;
+  inset: 52px 0 0;
+}
+.song-rising {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #a7d9ff;
+  background: #173b56;
+  color: #e0f3ff;
+  font-size: 9px;
+  box-shadow: 0 0 9px #86c9ff60;
 }
 @keyframes note-attack {
   from {
@@ -561,11 +598,11 @@ h1 em {
 }
 .pitch-cursor {
   position: absolute;
+  top: 38px;
   bottom: 0;
-  width: 8px;
-  height: 8px;
+  width: 3px;
   background: #67e8c2;
-  border-radius: 50%;
+  box-shadow: 0 0 8px #67e8c2;
   transform: translateX(-50%);
 }
 .antenna-overlay {
@@ -733,8 +770,15 @@ h1 em {
     font-size: 9px;
     padding: 2px 0;
   }
-  .note-line:not(.anchor):not(.selected) span {
-    visibility: hidden;
+  .note-line span {
+    font-size: 7px;
+    top: 0;
+  }
+  .note-line .label-row-1 {
+    top: 13px;
+  }
+  .note-line .label-row-2 {
+    top: 26px;
   }
   .stage-guide {
     left: 6px;

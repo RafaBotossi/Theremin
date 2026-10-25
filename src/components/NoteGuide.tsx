@@ -1,6 +1,7 @@
 import { noteName } from "../mapping/gestureMapping";
 import type { Settings } from "../types/theremin";
 import { pitchScreenPosition } from "../mapping/antennaMapping";
+import type { SongGuide } from "../music/song";
 export function notePosition(f: number, s: Settings) {
   return pitchScreenPosition(f, s);
 }
@@ -11,6 +12,8 @@ export function NoteGuide({
   target = null,
   upcoming = null,
   targetKey = null,
+  falling = [],
+  timed = false,
 }: {
   settings: Settings;
   frequency: number;
@@ -18,6 +21,8 @@ export function NoteGuide({
   target?: number | null;
   upcoming?: number | null;
   targetKey?: number | null;
+  falling?: SongGuide["falling"];
+  timed?: boolean;
 }) {
   const first = Math.ceil(69 + 12 * Math.log2(s.fMin / 440));
   const last = Math.floor(69 + 12 * Math.log2(s.fMax / 440));
@@ -38,24 +43,34 @@ export function NoteGuide({
           return (
             <div
               key={midi}
-              className={`note-line ${natural ? "natural" : ""} ${midi % 12 === 0 || midi % 12 === 7 || midi === first || midi === last ? "anchor" : ""} ${active && midi === nearest && target === null && upcoming === null ? "selected" : ""} ${scaleNote ? "" : "excluded"}`}
+              className={`note-line ${natural ? "natural" : "accidental"} ${active && midi === nearest ? "selected" : ""} ${scaleNote ? "" : "excluded"}`}
               style={{ left: `${position * 100}%` }}
             >
-              <span>
-                {(active &&
-                  midi === nearest &&
-                  target === null &&
-                  upcoming === null) ||
-                (s.controlMode === "screen" &&
-                  natural &&
-                  (last - first <= 28 || midi % 12 === 0))
-                  ? noteName(f)
-                  : ""}
-              </span>
+              <span className={`label-row-${midi % 3}`}>{noteName(f)}</span>
             </div>
           );
         },
       )}
+      {timed && (
+        <div className="song-hit-line">
+          <span>TOQUE AQUI</span>
+        </div>
+      )}
+      <div className="rising-notes">
+        {falling.map((note) => (
+          <div
+            key={`${note.start}-${note.midi}`}
+            className="song-note-dot song-rising"
+            data-start={note.start}
+            style={{
+              left: `${notePosition(440 * 2 ** ((note.midi - 69) / 12), s) * 100}%`,
+              top: `${note.progress * 100}%`,
+            }}
+          >
+            <span>{noteName(440 * 2 ** ((note.midi - 69) / 12))}</span>
+          </div>
+        ))}
+      </div>
       {upcoming !== null && (
         <div
           className="song-note-dot song-next"

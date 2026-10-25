@@ -185,6 +185,8 @@ export function App() {
               target={songGuide.current}
               targetKey={songGuide.attack}
               upcoming={songGuide.next}
+              falling={songGuide.falling}
+              timed={songGuide.timed}
             />
             {settings.controlMode === "screen" && (
               <div

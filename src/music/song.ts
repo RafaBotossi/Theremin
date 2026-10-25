@@ -16,6 +16,18 @@ export interface SongGuide {
   next: number | null;
   cue: string;
   remaining: number | null;
+  falling?: { midi: number; start: number; progress: number }[];
+  timed?: boolean;
+}
+// Positions follow the song clock, so pause, speed and looping stay in sync.
+export function risingNotes(notes: SongNote[], time: number, horizon = 4) {
+  return notes
+    .filter((n) => n.start > time && n.start <= time + horizon)
+    .map((n) => ({
+      midi: n.midi,
+      start: n.start,
+      progress: (n.start - time) / horizon,
+    }));
 }
 export const emptyGuide: SongGuide = {
   listening: false,

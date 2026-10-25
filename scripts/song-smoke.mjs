@@ -21,6 +21,12 @@ try {
     .selectOption("ecstasy");
   await page.getByLabel("Começar em").selectOption("12");
   await page.getByRole("button", { name: "Iniciar guia", exact: true }).click();
+  const rising = page.locator(".song-rising").first();
+  await rising.waitFor();
+  const initialY = await rising.evaluate((el) => parseFloat(el.style.top));
+  await page.waitForTimeout(400);
+  if ((await rising.evaluate((el) => parseFloat(el.style.top))) >= initialY)
+    throw Error("Notes must move upward");
   await page.locator(".song-target").waitFor({ timeout: 6000 });
   const first = await page.locator(".song-target span").textContent();
   await page.waitForFunction(
@@ -29,9 +35,12 @@ try {
   );
   await page.getByRole("button", { name: "Pausar guia", exact: true }).click();
   const target = await page.locator(".song-target").getAttribute("style");
+  const frozenNotes = await page.locator(".rising-notes").innerHTML();
   await page.waitForTimeout(500);
   if ((await page.locator(".song-target").getAttribute("style")) !== target)
     throw Error("Pause moved");
+  if ((await page.locator(".rising-notes").innerHTML()) !== frozenNotes)
+    throw Error("Paused rising notes moved");
   const left = await page
     .locator(".song-target")
     .evaluate((el) => parseFloat(el.style.left));
@@ -44,14 +53,21 @@ try {
     !marker ||
     !guide ||
     marker.height > 40 ||
-    Math.abs(marker.y - guide.y) > 1
+    Math.abs(marker.y + marker.height / 2 - guide.y - 52) > 1
   )
-    throw Error("Current note must be a small dot at the top");
+    throw Error("Current note must meet the hit line near the top");
   await mkdir("test-results", { recursive: true });
   await page.screenshot({
     path: "test-results/song-desktop.png",
     fullPage: true,
   });
+  await page.getByLabel("Velocidade (%)", { exact: true }).fill("0");
+  await page.getByRole("button", { name: "Retomar guia", exact: true }).click();
+  const frozenAtZero = await page.locator(".rising-notes").innerHTML();
+  await page.waitForTimeout(500);
+  if ((await page.locator(".rising-notes").innerHTML()) !== frozenAtZero)
+    throw Error("Zero speed must freeze notes");
+  await page.getByLabel("Velocidade (%)", { exact: true }).fill("100");
   await page
     .getByRole("button", { name: "Encerrar guia", exact: true })
     .click();

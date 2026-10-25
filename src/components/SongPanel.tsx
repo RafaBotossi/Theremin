@@ -8,6 +8,7 @@ import {
   frameAt,
   isPolyphonic,
   midiFrequency,
+  risingNotes,
   type Melody,
   type SongGuide,
 } from "../music/song";
@@ -168,6 +169,9 @@ export function SongPanel({
       enabled
         ? {
             active: true,
+            timed: !practice && status !== "done",
+            falling:
+              !practice && status !== "done" ? risingNotes(notes, time) : [],
             listening: playback.listening,
             attack: frame.current?.start ?? null,
             current:
@@ -197,6 +201,7 @@ export function SongPanel({
     speed,
     playback.listening,
     practice,
+    notes,
   ]);
   useEffect(
     () => () => {
@@ -527,8 +532,10 @@ export function SongPanel({
         }
       />
       <p>
-        Bolinha amarela no topo: única nota a tocar agora. Em Tocar nota por
-        nota, sustente o alvo por 0,25 s dentro de ±35 cents para avançar no seu
+        No guia com tempo, as bolinhas sobem: toque quando chegarem à linha
+        amarela perto do topo e sustente enquanto o alvo ficar amarelo. As
+        linhas verdes mostram onde você está tocando. Em Tocar nota por nota,
+        sustente o alvo por 0,25 s dentro de ±35 cents para avançar no seu
         ritmo. Para notas repetidas, dobre e estique o indicador. As pausas
         escritas são livres neste modo; velocidade vale para o guia com tempo e
         para ouvir. A faixa e a afinação livre são ajustadas ao iniciar; sua
