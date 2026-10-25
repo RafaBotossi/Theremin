@@ -19,6 +19,7 @@ import {
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
 import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
+import { easyPitch } from "../music/easyPitch";
 const connections = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -31,11 +32,12 @@ export function useHandTracking(
   settings: Settings,
   muted: boolean,
   calibrating: boolean,
+  easyTarget: number | null = null,
 ) {
   const video = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null);
-  const current = useRef({ settings, muted, calibrating });
-  current.current = { settings, muted, calibrating };
+  const current = useRef({ settings, muted, calibrating, easyTarget });
+  current.current = { settings, muted, calibrating, easyTarget };
   const [status, setStatus] = useState<"idle" | "loading" | "running">("idle");
   const [error, setError] = useState("");
   const [reading, setReading] = useState(() => ({
@@ -228,7 +230,10 @@ export function useHandTracking(
               dt,
               s.smoothing,
             );
-            frequency = quantize(frequencyAt(t, s.fMin, s.fMax), s.scale);
+            frequency = easyPitch(
+              quantize(frequencyAt(t, s.fMin, s.fMax), s.scale),
+              current.current.easyTarget,
+            );
           } else if (!safe) pitchFilter.reset();
           if (s.controlMode === "wand") {
             // Never let ambiguous single-hand reassignment overwrite the volume.

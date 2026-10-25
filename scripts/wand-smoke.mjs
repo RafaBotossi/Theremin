@@ -146,7 +146,7 @@ try {
     .getByRole("combobox", { name: "Música", exact: true })
     .selectOption("demo");
   await page.getByLabel("Velocidade (%)", { exact: true }).fill("0");
-  await page.getByRole("button", { name: "Iniciar guia", exact: true }).click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   const targetX = await page
     .locator(".song-target")
     .evaluate((e) => parseFloat(e.style.left) / 100);
@@ -157,15 +157,38 @@ try {
     () => Math.abs(window.manual().frequency - 261.625565) < 0.2,
   );
   const manualFrequency = await page.evaluate(() => window.manual().frequency);
-  await page
-    .getByRole("button", { name: "Encerrar guia", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Easy", exact: true }).click();
+  const nearX = await page.evaluate((x) => {
+    const s = JSON.parse(localStorage.getItem("air-theremin-settings"));
+    return (
+      x +
+      ((s.invertPitch ? -1 : 1) *
+        (s.pitchMax - s.pitchMin) *
+        ((0.8 / 12) * Math.log(2))) /
+        Math.log(s.fMax / s.fMin) /
+        s.sensitivity
+    );
+  }, targetX);
+  await page.evaluate((x) => {
+    window.hands[0].x = x;
+  }, nearX);
+  await page.waitForTimeout(500);
+  await page.waitForFunction(
+    () => Math.abs(window.manual().frequency - 261.625565) < 0.3,
+  );
+  await page.getByRole("button", { name: "Normal", exact: true }).click();
+  await page.waitForFunction(() => window.manual().frequency > 270);
+  await page.evaluate((x) => {
+    window.hands[0].x = x;
+  }, targetX);
+  await page.getByRole("button", { name: "PARAR", exact: true }).click();
   await page.evaluate(() => {
     window.hands[0].x = 0.8;
   });
   await page
-    .getByRole("button", { name: "Tocar nota por nota", exact: true })
+    .getByRole("button", { name: "Acertar para avançar", exact: true })
     .click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   await page.waitForTimeout(700);
   if ((await page.locator(".song-target span").textContent()) !== "Dó4")
     throw Error("Wrong note advanced");
@@ -186,9 +209,7 @@ try {
     path: "test-results/wand-desktop.png",
     fullPage: true,
   });
-  await page
-    .getByRole("button", { name: "Encerrar guia", exact: true })
-    .click();
+  await page.getByRole("button", { name: "PARAR", exact: true }).click();
   await page.getByLabel("Velocidade (%)", { exact: true }).fill("10");
   await page
     .getByRole("button", { name: "♪ Ouvir música", exact: true })

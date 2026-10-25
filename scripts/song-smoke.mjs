@@ -19,8 +19,8 @@ try {
   await page
     .getByRole("combobox", { name: "Música", exact: true })
     .selectOption("ecstasy");
-  await page.getByLabel("Começar em").selectOption("12");
-  await page.getByRole("button", { name: "Iniciar guia", exact: true }).click();
+  await page.getByLabel("Começar em").fill("12");
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   const rising = page.locator(".song-rising").first();
   await rising.waitFor();
   const initialY = await rising.evaluate((el) => parseFloat(el.style.top));
@@ -33,7 +33,7 @@ try {
     (t) => document.querySelector(".song-target span")?.textContent !== t,
     first,
   );
-  await page.getByRole("button", { name: "Pausar guia", exact: true }).click();
+  await page.getByRole("button", { name: "PAUSAR", exact: true }).click();
   const target = await page.locator(".song-target").getAttribute("style");
   const frozenNotes = await page.locator(".rising-notes").innerHTML();
   await page.waitForTimeout(500);
@@ -62,15 +62,13 @@ try {
     fullPage: true,
   });
   await page.getByLabel("Velocidade (%)", { exact: true }).fill("0");
-  await page.getByRole("button", { name: "Retomar guia", exact: true }).click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   const frozenAtZero = await page.locator(".rising-notes").innerHTML();
   await page.waitForTimeout(500);
   if ((await page.locator(".rising-notes").innerHTML()) !== frozenAtZero)
     throw Error("Zero speed must freeze notes");
   await page.getByLabel("Velocidade (%)", { exact: true }).fill("100");
-  await page
-    .getByRole("button", { name: "Encerrar guia", exact: true })
-    .click();
+  await page.getByRole("button", { name: "PARAR", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Música", exact: true })
     .selectOption("midi");
@@ -86,18 +84,16 @@ try {
     buffer: Buffer.from(bytes),
   });
   await page.getByRole("combobox", { name: "Trilha da melodia" }).waitFor();
-  await page.getByRole("button", { name: "Iniciar guia", exact: true }).click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   await page.locator(".song-target").waitFor({ timeout: 6000 });
-  await page
-    .getByRole("button", { name: "Encerrar guia", exact: true })
-    .click();
+  await page.getByRole("button", { name: "PARAR", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page
     .getByRole("combobox", { name: "Música", exact: true })
     .selectOption("ecstasy");
-  await page.getByRole("button", { name: "Iniciar guia", exact: true }).click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   await page.locator(".song-target").waitFor({ timeout: 6000 });
-  await page.getByRole("button", { name: "Pausar guia", exact: true }).click();
+  await page.getByRole("button", { name: "PAUSAR", exact: true }).click();
   await page.screenshot({
     path: "test-results/song-mobile.png",
     fullPage: true,

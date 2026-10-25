@@ -9,6 +9,44 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SongPanel } from "../src/components/SongPanel";
 import { defaults, emptyReading } from "../src/types/theremin";
 beforeEach(() => vi.useFakeTimers());
+it("selects a starting note, toggles advanced options and scopes Easy to the active target", () => {
+  const onGuide = vi.fn();
+  render(
+    <SongPanel
+      settings={defaults}
+      blocked={false}
+      running={false}
+      onGuide={onGuide}
+      onSettings={vi.fn()}
+    />,
+  );
+  expect(screen.getByLabelText("Transpor")).not.toBeVisible();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Configurações avançadas" }),
+  );
+  expect(screen.getByLabelText("Transpor")).toBeVisible();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Configurações avançadas" }),
+  );
+  expect(screen.getByLabelText("Transpor")).not.toBeVisible();
+  fireEvent.change(screen.getByLabelText("Música"), {
+    target: { value: "demo" },
+  });
+  fireEvent.change(screen.getByLabelText("Começar em"), {
+    target: { value: "2" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Acertar para avançar" }));
+  fireEvent.click(screen.getByRole("button", { name: "Easy" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
+  expect(onGuide.mock.lastCall?.[0]).toMatchObject({
+    current: 64,
+    easyTarget: 64,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Normal" }));
+  expect(onGuide.mock.lastCall?.[0].easyTarget).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "PARAR" }));
+  expect(onGuide.mock.lastCall?.[0].active).toBe(false);
+});
 it("freezes rising notes at zero speed during the countdown", () => {
   const onGuide = vi.fn();
   render(
@@ -23,7 +61,7 @@ it("freezes rising notes at zero speed during the countdown", () => {
   fireEvent.change(screen.getByLabelText("Velocidade (%)"), {
     target: { value: "25" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   act(() => vi.advanceTimersByTime(1000));
   const notes = onGuide.mock.lastCall?.[0].falling;
   fireEvent.change(screen.getByLabelText("Velocidade (%)"), {
@@ -46,7 +84,8 @@ it("nota por nota aguarda acerto e não revela o próximo alvo", () => {
   fireEvent.change(screen.getByLabelText("Música"), {
     target: { value: "demo" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Tocar nota por nota" }));
+  fireEvent.click(screen.getByRole("button", { name: "Acertar para avançar" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   act(() => vi.advanceTimersByTime(20000));
   expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 60, next: null });
   for (let i = 0; i < 5; i++) {
@@ -80,7 +119,7 @@ it("nota por nota aguarda acerto e não revela o próximo alvo", () => {
       }}
     />,
   );
-  expect(screen.getByRole("button", { name: "Retomar guia" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "INICIAR" })).toBeDisabled();
 });
 afterEach(() => {
   cleanup();
@@ -101,7 +140,7 @@ it("conta três segundos, destaca notas, pausa e encerra o guia", () => {
   fireEvent.change(screen.getByLabelText("Começar em"), {
     target: { value: "12" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   expect(onSettings.mock.calls[0][0]).toMatchObject({
     pitchLeft: false,
     scale: "free",
@@ -110,11 +149,11 @@ it("conta três segundos, destaca notas, pausa e encerra o guia", () => {
   expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 69, next: null });
   act(() => vi.advanceTimersByTime(625));
   expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 76, next: null });
-  fireEvent.click(screen.getByRole("button", { name: "Pausar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "PAUSAR" }));
   const count = onGuide.mock.calls.length;
   act(() => vi.advanceTimersByTime(2000));
   expect(onGuide.mock.calls.length).toBe(count);
-  fireEvent.click(screen.getByRole("button", { name: "Encerrar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "PARAR" }));
   expect(onGuide.mock.lastCall?.[0].active).toBe(false);
 });
 it("conclui sem repetir e pausa ao mutar", () => {
@@ -133,10 +172,10 @@ it("conclui sem repetir e pausa ao mutar", () => {
   fireEvent.change(screen.getByLabelText("Música"), {
     target: { value: "demo" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   act(() => vi.advanceTimersByTime(14000));
   expect(onGuide.mock.lastCall?.[0].cue).toBe("Trecho concluído");
-  fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   view.rerender(
     <SongPanel
       settings={defaults}
@@ -146,7 +185,7 @@ it("conclui sem repetir e pausa ao mutar", () => {
       onSettings={onSettings}
     />,
   );
-  expect(screen.getByRole("button", { name: "Retomar guia" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "INICIAR" })).toBeDisabled();
 });
 it("0% fixa o primeiro alvo sem infinito e 1% avança lentamente", () => {
   const onGuide = vi.fn();
@@ -165,7 +204,7 @@ it("0% fixa o primeiro alvo sem infinito e 1% avança lentamente", () => {
   fireEvent.change(screen.getByLabelText("Velocidade (%)"), {
     target: { value: "0" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   expect(onGuide.mock.lastCall?.[0]).toMatchObject({
     current: 69,
     remaining: null,

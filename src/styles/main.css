@@ -13,6 +13,83 @@
   font-weight: 400;
   color-scheme: dark;
 }
+.song-selection {
+  max-width: 520px;
+}
+.song-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  margin-top: 12px;
+}
+.song-segments {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.instrument-app .song-segments button {
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.instrument-app .song-segments button[aria-pressed="true"] {
+  background: #203c36;
+  border-color: #518a79;
+  color: #b5f5df;
+}
+.instrument-app .song-transport .song-start {
+  background: #195b43;
+  border-color: #3a9b70;
+  color: #dcfff0;
+  font-weight: 650;
+}
+.instrument-app .song-transport .song-stop {
+  background: #662c33;
+  border-color: #a34b55;
+  color: #ffe5e8;
+  font-weight: 650;
+}
+.instrument-app .song-transport .song-start:hover:not(:disabled) {
+  background: #247956;
+}
+.instrument-app .song-transport .song-stop:hover:not(:disabled) {
+  background: #88343e;
+}
+.song-primary-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 800px;
+  gap: 24px;
+  margin-top: 16px;
+}
+.song-primary-controls label {
+  min-width: 0;
+}
+.song-primary-controls input[type="range"] {
+  width: 100%;
+  margin: 8px 0;
+}
+.song-start-position {
+  color: #9aa9bc;
+  font-size: 11px;
+}
+.instrument-app .song-advanced-toggle {
+  font-size: 11px;
+  background: transparent;
+  border-color: #2b3542;
+  padding: 8px 10px;
+  margin: 12px 0;
+}
+#song-advanced:not([hidden]) {
+  padding: 12px 0;
+  border-top: 1px solid #27313e;
+}
+@media (max-width: 540px) {
+  .song-primary-controls {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
 .instrument-app {
   padding-bottom: 24px;
 }

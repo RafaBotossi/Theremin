@@ -34,6 +34,9 @@ export function SongPanel({
   reading?: Reading;
 }) {
   const [choice, setChoice] = useState("ecstasy");
+  const [advanced, setAdvanced] = useState(false);
+  const [easy, setEasy] = useState(false);
+  const [startNote, setStartNote] = useState(0);
   const [tracks, setTracks] = useState<Melody[]>([]);
   const [track, setTrack] = useState(0);
   const [speed, setSpeed] = useState(1);
@@ -64,10 +67,19 @@ export function SongPanel({
       : choice === "demo"
         ? demoMelody
         : tracks[track];
-  const notes = useMemo(
-    () => melody?.notes.map((n) => ({ ...n, midi: n.midi + transpose })) ?? [],
-    [melody, transpose],
-  );
+  const notes = useMemo(() => {
+    const offset =
+      choice !== "ecstasy" && startNote > 0
+        ? (melody?.notes[startNote]?.start ?? 0)
+        : 0;
+    return (
+      melody?.notes.slice(choice === "ecstasy" ? 0 : startNote).map((n) => ({
+        ...n,
+        start: n.start - offset,
+        midi: n.midi + transpose,
+      })) ?? []
+    );
+  }, [melody, transpose, choice, startNote]);
   const duration = notes.length
     ? notes[notes.length - 1].start + notes[notes.length - 1].duration
     : 0;
@@ -174,6 +186,10 @@ export function SongPanel({
       enabled
         ? {
             active: true,
+            easyTarget:
+              easy && status === "playing" && time >= 0 && !playback.listening
+                ? (frame.current?.midi ?? null)
+                : null,
             timed: !practice && status !== "done",
             falling:
               !practice && status !== "done"
@@ -214,6 +230,7 @@ export function SongPanel({
     practice,
     notes,
     lookahead,
+    easy,
   ]);
   useEffect(
     () => () => {
@@ -240,6 +257,7 @@ export function SongPanel({
       if (id !== generation.current) return;
       setTracks(parsed);
       setTrack(0);
+      setStartNote(0);
       setChoice("midi");
       setTranspose(0);
     } catch (e) {
@@ -276,22 +294,7 @@ export function SongPanel({
   return (
     <section className="song-panel" aria-label="Escolha de música">
       <p className="eyebrow">TOQUE UMA MÚSICA</p>
-      <div className="song-controls">
-        <label>
-          Avanço da música
-          <select
-            value={practice ? "practice" : "timed"}
-            onChange={(e) => {
-              reset();
-              setPractice(e.target.value === "practice");
-            }}
-          >
-            <option value="timed">Seguir o tempo</option>
-            <option value="practice">
-              No meu ritmo · acertar para avançar
-            </option>
-          </select>
-        </label>
+      <div className="song-selection">
         <label>
           Música
           <select
@@ -299,6 +302,7 @@ export function SongPanel({
             onChange={(e) => {
               generation.current++;
               setChoice(e.target.value);
+              setStartNote(0);
               reset();
               setError("");
             }}
@@ -310,6 +314,127 @@ export function SongPanel({
             <option value="midi">Meu arquivo MIDI</option>
           </select>
         </label>
+      </div>
+      {choice === "midi" && (
+        <div className="song-controls">
+          <label>
+            Importar melodia MIDI
+            <input
+              type="file"
+              accept=".mid,.midi"
+              onChange={(e) => {
+                void importFile(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {!!tracks.length && (
+            <label>
+              Trilha da melodia
+              <select
+                value={track}
+                onChange={(e) => {
+                  setTrack(Number(e.target.value));
+                  setStartNote(0);
+                  reset();
+                }}
+              >
+                {tracks.map((t, i) => (
+                  <option key={i} value={i}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
+
+      <div className="song-mode-row">
+        <div
+          role="group"
+          aria-label="Avanço da música"
+          className="song-segments"
+        >
+          <button
+            aria-pressed={!practice}
+            onClick={() => {
+              reset();
+              setPractice(false);
+            }}
+          >
+            Seguir o tempo
+          </button>
+          <button
+            aria-pressed={practice}
+            onClick={() => {
+              reset();
+              setPractice(true);
+            }}
+          >
+            Acertar para avançar
+          </button>
+        </div>
+        <div role="group" aria-label="Dificuldade" className="song-segments">
+          <button
+            aria-pressed={!easy}
+            onClick={() => {
+              setEasy(false);
+              match.current = { ...emptyMatch };
+            }}
+          >
+            Normal
+          </button>
+          <button
+            aria-pressed={easy}
+            title="Corrige até um semitom acima ou abaixo do alvo"
+            onClick={() => {
+              setEasy(true);
+              match.current = { ...emptyMatch };
+            }}
+          >
+            Easy
+          </button>
+        </div>
+      </div>
+      <div className="song-transport">
+        <button
+          disabled={blocked || !notes.length || polyphonic || outOfRange}
+          onClick={() => {
+            if (playback.listening || playback.loading) {
+              playback.stop();
+              return;
+            }
+            void playback.listen().then((ok) => {
+              if (ok) start(false);
+            });
+          }}
+        >
+          {playback.loading
+            ? "Cancelar áudio"
+            : playback.listening
+              ? "Desligar som automático"
+              : "♪ Ouvir música"}
+        </button>
+
+        <button
+          className="song-start"
+          disabled={!notes.length || polyphonic || outOfRange || blocked}
+          onClick={
+            status === "playing" ? () => setStatus("paused") : () => start()
+          }
+        >
+          {status === "playing" ? "PAUSAR" : "INICIAR"}
+        </button>
+        <button
+          className="song-stop"
+          disabled={status === "idle" && !playback.loading}
+          onClick={reset}
+        >
+          PARAR
+        </button>
+      </div>
+      <div className="song-primary-controls">
         <div className="speed-control">
           <label>
             Velocidade (%)
@@ -336,54 +461,89 @@ export function SongPanel({
             onChange={(e) => setSpeed(Number(e.target.value) / 100)}
           />
         </div>
+
         <label>
-          Transpor
-          <select
-            value={transpose}
+          Começar em
+          <input
+            type="range"
+            min={choice === "ecstasy" ? 1 : 0}
+            aria-label="Começar em"
+            max={
+              choice === "ecstasy"
+                ? 46
+                : Math.max(0, (melody?.notes.length ?? 1) - 1)
+            }
+            step={1}
+            disabled={!melody?.notes.length}
+            value={choice === "ecstasy" ? startMeasure : startNote}
+            aria-valuetext={
+              choice === "ecstasy"
+                ? `Compasso ${startMeasure} de 46`
+                : `Nota ${startNote + 1} de ${melody?.notes.length ?? 0}`
+            }
             onChange={(e) => {
-              setTranspose(Number(e.target.value));
               reset();
+              if (choice === "ecstasy") setStartMeasure(Number(e.target.value));
+              else setStartNote(Number(e.target.value));
             }}
-          >
-            {[-24, -12, 0, 12, 24].map((n) => (
-              <option key={n} value={n}>
-                {n === 0
-                  ? "Tom do arquivo"
-                  : `${n > 0 ? "+" : ""}${n / 12} oitava(s)`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Antecedência visual
-          <select
-            value={lookahead}
-            onChange={(e) => setLookahead(Number(e.target.value))}
-          >
-            <option value={4}>4 s · subida rápida</option>
-            <option value={8}>8 s · subida suave</option>
-            <option value={12}>12 s · subida bem lenta</option>
-          </select>
+          />
+          <span className="song-start-position">
+            {choice === "ecstasy"
+              ? `Compasso ${startMeasure} / 46`
+              : `Nota ${startNote + 1} / ${melody?.notes.length ?? 0}`}
+          </span>
         </label>
       </div>
-      {choice === "ecstasy" && (
-        <>
+      <button
+        className="song-advanced-toggle"
+        aria-expanded={advanced}
+        aria-controls="song-advanced"
+        onClick={() => setAdvanced(!advanced)}
+      >
+        Configurações avançadas
+      </button>
+      <div id="song-advanced" hidden={!advanced}>
+        <div className="song-controls">
+          <label>
+            Transpor
+            <select
+              value={transpose}
+              onChange={(e) => {
+                setTranspose(Number(e.target.value));
+                reset();
+              }}
+            >
+              {[-24, -12, 0, 12, 24].map((n) => (
+                <option key={n} value={n}>
+                  {n === 0
+                    ? "Tom do arquivo"
+                    : `${n > 0 ? "+" : ""}${n / 12} oitava(s)`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Antecedência visual
+            <select
+              value={lookahead}
+              onChange={(e) => setLookahead(Number(e.target.value))}
+            >
+              <option value={4}>4 s · subida rápida</option>
+              <option value={8}>8 s · subida suave</option>
+              <option value={12}>12 s · subida bem lenta</option>
+            </select>
+          </label>{" "}
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={loop}
+              onChange={(e) => setLoop(e.target.checked)}
+            />
+            Repetir trecho
+          </label>
+        </div>
+        {choice === "ecstasy" && (
           <div className="song-controls score-controls">
-            <label>
-              Começar em
-              <select
-                value={startMeasure}
-                onChange={(e) => {
-                  setStartMeasure(Number(e.target.value));
-                  reset();
-                }}
-              >
-                <option value={1}>Início · compasso 1</option>
-                <option value={12}>Tema principal · compasso 12</option>
-                <option value={24}>Tema grave · compasso 24</option>
-                <option value={33}>Seção final · compasso 33</option>
-              </select>
-            </label>
             <label>
               Andamento base (BPM)
               <input
@@ -416,95 +576,7 @@ export function SongPanel({
               </select>
             </label>
           </div>
-        </>
-      )}
-      {choice === "midi" && (
-        <div className="song-controls">
-          <label>
-            Importar melodia MIDI
-            <input
-              type="file"
-              accept=".mid,.midi"
-              onChange={(e) => {
-                void importFile(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          {!!tracks.length && (
-            <label>
-              Trilha da melodia
-              <select
-                value={track}
-                onChange={(e) => {
-                  setTrack(Number(e.target.value));
-                  reset();
-                }}
-              >
-                {tracks.map((t, i) => (
-                  <option key={i} value={i}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-      )}
-      <div className="song-transport">
-        <button
-          disabled={blocked || !notes.length || polyphonic || outOfRange}
-          onClick={() => {
-            playback.stop();
-            start(true);
-          }}
-        >
-          Tocar nota por nota
-        </button>
-        <button
-          disabled={blocked || !notes.length || polyphonic || outOfRange}
-          onClick={() => {
-            if (playback.listening || playback.loading) {
-              playback.stop();
-              return;
-            }
-            void playback.listen().then((ok) => {
-              if (ok) start(false);
-            });
-          }}
-        >
-          {playback.loading
-            ? "Cancelar áudio"
-            : playback.listening
-              ? "Desligar som automático"
-              : "♪ Ouvir música"}
-        </button>
-        <button
-          disabled={!notes.length || polyphonic || outOfRange || blocked}
-          onClick={
-            status === "playing" ? () => setStatus("paused") : () => start()
-          }
-        >
-          {status === "playing"
-            ? "Pausar guia"
-            : status === "paused"
-              ? "Retomar guia"
-              : "Iniciar guia"}
-        </button>
-        <button
-          disabled={status === "idle" && !playback.loading}
-          onClick={reset}
-        >
-          Encerrar guia
-        </button>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={loop}
-            onChange={(e) => setLoop(e.target.checked)}
-          />
-          Repetir trecho
-        </label>
+        )}
       </div>
       <div className="song-status" role="status">
         {error ||

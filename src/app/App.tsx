@@ -24,6 +24,7 @@ export function App() {
     settings,
     muted || songGuide.listening,
     calibrating,
+    songGuide.easyTarget ?? null,
   );
   const recorder = useRef<MediaRecorder | null>(null);
   const clipRef = useRef("");

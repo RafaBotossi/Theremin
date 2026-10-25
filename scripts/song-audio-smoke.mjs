@@ -36,6 +36,9 @@ try {
   await page
     .getByRole("combobox", { name: "Música", exact: true })
     .selectOption("demo");
+  await page
+    .getByRole("button", { name: "Configurações avançadas", exact: true })
+    .click();
   await page.getByLabel("Repetir trecho").uncheck();
   await page
     .getByRole("button", { name: "♪ Ouvir música", exact: true })
@@ -76,7 +79,7 @@ try {
     throw Error("Zero speed advances");
   await page.getByLabel("Velocidade (%)", { exact: true }).fill("1");
   await page.waitForFunction(() => window.level() > 0.001);
-  await page.getByRole("button", { name: "Pausar guia", exact: true }).click();
+  await page.getByRole("button", { name: "PAUSAR", exact: true }).click();
   await page.waitForFunction(() => window.level() < 0.0001);
   await mkdir("test-results", { recursive: true });
   await page.screenshot({
@@ -84,7 +87,7 @@ try {
     fullPage: true,
   });
   await page.getByLabel("Velocidade (%)", { exact: true }).fill("100");
-  await page.getByRole("button", { name: "Retomar guia", exact: true }).click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
   await page
     .locator(".song-status")
     .filter({ hasText: "Trecho concluído" })
