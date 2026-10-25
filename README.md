@@ -1,6 +1,6 @@
 # Air Theremin
 
-Instrumento para webcam, feito com React, TypeScript strict, Vite, MediaPipe Hand Landmarker e Web Audio. O padrão é uma varinha controlada pelo indicador de qualquer mão; o modo de duas antenas continua disponível nas configurações. Vídeo, landmarks e som são processados no navegador. Não há backend, analytics, microfone, conta, API remota nem CDN em execução.
+Instrumento para webcam, feito com React, TypeScript strict, Vite, MediaPipe Hand Landmarker e Web Audio. O padrão usa indicador esquerdo na nota e palma direita no volume; o modo de duas antenas continua disponível nas configurações. Vídeo, landmarks e som são processados no navegador. Não há backend, analytics, microfone, conta, API remota nem CDN em execução.
 
 ## Executar
 
@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Abra a URL localhost indicada pelo Vite ou https://rafabotossi.github.io/Theremin/. Clique **Iniciar câmera e áudio** e permita a webcam. Use boa iluminação e estique o indicador de qualquer mão: a ponta controla a nota na horizontal e o volume na vertical. Dobrar o indicador ou retirar a mão silencia. Se as duas mãos estiverem esticadas, uma permanece ativa, sem misturar posições. **Parar** libera câmera e AudioContext. **Mutar** mantém o rastreamento sem som. A gravação captura somente a síntese e permite baixar o arquivo localmente, sem upload.
+Abra a URL localhost indicada pelo Vite ou https://rafabotossi.github.io/Theremin/. Clique **Iniciar câmera e áudio** e permita a webcam. Use boa iluminação e as duas mãos visíveis: o indicador esquerdo escolhe a nota na horizontal. A palma direita aberta controla o volume pela altura: subir aumenta, descer diminui. Fechá-la mantém o último volume; ao iniciar, abra a palma para definir o volume. Dobrar o indicador esquerdo ou perder o rastreamento silencia. Configurações permite inverter as mãos. **Parar** libera câmera e AudioContext. **Mutar** mantém o rastreamento sem som. A gravação captura somente a síntese e permite baixar o arquivo localmente, sem upload.
 
 ```sh
 npm run lint
@@ -43,7 +43,7 @@ Validação: `npm test` cobre DSP, lifecycle e UI. `node scripts/audio-lab-smoke
 
 **Tocar nota por nota** avança apenas após sustentar o alvo por 250 ms dentro de ±35 cents, com som audível. Apenas a bolinha da nota a tocar aparece. Não basta acertar o nome em outra oitava. Notas repetidas exigem dobrar e esticar o indicador. Nesse modo, as pausas e durações ficam a cargo de quem toca; a velocidade controla apenas a reprodução e o guia com tempo. **Avanço da música** permite alternar os dois modos.
 
-O padrão **Varinha** usa exclusivamente o indicador, sem laço circular. **Calibrar** mede horizontal e vertical com uma mão, avançando sem cliques e pausando com o dedo dobrado. Os presets preservam esse modo; durante uma música, também preservam a faixa e afinação do guia. Referência automática e instrumento usam o mesmo timbre, efeitos e vibrato. A referência tem volume fixo, enquanto o volume tocado depende da altura do indicador. A barra de afinação compara frequências, não apenas nomes arredondados de notas.
+O padrão **Indicador na nota · palma no volume** não exibe laço circular. **Calibrar** mede a horizontal do indicador de nota e a vertical da palma de volume, avançando sem cliques. A medição de volume exige a palma aberta. Os presets preservam esse modo; durante uma música, também preservam a faixa e afinação do guia. Referência automática e instrumento usam o mesmo timbre e efeitos. A referência tem volume fixo, enquanto o volume tocado é ajustado pela palma. A barra de afinação compara frequências, não apenas nomes arredondados de notas.
 
 Em **Toque uma música**, selecione a opção e clique **Iniciar guia**. Há 3 segundos de preparação; a régua destaca somente a nota a tocar em amarelo. O guia ajusta faixa de frequência e afinação livre às notas, preservando calibração e lado das mãos. É possível pausar, retomar, repetir e transpor oitavas. A velocidade vai de **0 a 100%**, em passos de 1%, por campo numérico ou controle deslizante. Em 0%, o tempo fica congelado e a reprodução automática fica silenciosa; ao iniciar nessa velocidade, a primeira nota já aparece para treino.
 

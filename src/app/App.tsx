@@ -207,7 +207,7 @@ export function App() {
                 <h2>Encontre sua frequência</h2>
                 <p>
                   {settings.controlMode === "wand"
-                    ? "Estique o indicador de qualquer mão à frente da câmera."
+                    ? "Estique o indicador da mão de nota e abra a palma da mão de volume."
                     : "Posicione as duas mãos à frente da câmera."}
                   <br />
                   Um pouco de espaço. Infinitas possibilidades.
@@ -240,8 +240,14 @@ export function App() {
                 >
                   {settings.controlMode === "wand" ? (
                     <>
-                      <span>INDICADOR ↔ NOTA · ↕ VOLUME</span>
-                      <span>DOBRE PARA SILENCIAR</span>
+                      <span>
+                        INDICADOR {settings.pitchLeft ? "ESQUERDO" : "DIREITO"}{" "}
+                        ↔ NOTA
+                      </span>
+                      <span>
+                        PALMA {settings.pitchLeft ? "DIREITA" : "ESQUERDA"} ↕
+                        VOLUME
+                      </span>
                     </>
                   ) : (
                     <>
@@ -296,7 +302,7 @@ export function App() {
                 update(s);
                 setCalibrating(false);
                 setNotice(
-                  "Calibração salva. Estique o indicador e eleve a mão para tocar.",
+                  "Calibração salva. Indicador na nota, palma aberta no volume.",
                 );
               }}
               onClose={() => setCalibrating(false)}
@@ -483,14 +489,14 @@ export function App() {
             : running && settings.maxGain === 0
               ? "Ganho máximo está em zero. Ajuste-o em Configurações para ouvir."
               : running && !r.pitch
-                ? "Estique o indicador de qualquer mão para tocar. Dobrado, ele silencia."
+                ? "Estique o indicador da mão de nota para tocar. Dobrado, ele silencia."
                 : running && !r.volume
                   ? "Mostre a mão de volume e eleve-a para aumentar o som."
                   : running && r.outside
                     ? "Mão fora da área calibrada: valor limitado à borda."
                     : notice ||
                       (running
-                        ? "Mova o indicador na horizontal para afinar e eleve-o para aumentar o volume."
+                        ? "Indicador na horizontal: nota. Palma da outra mão aberta: ajusta volume; fechada: mantém."
                         : "")}
       </div>
       {config && <SettingsPanel value={settings} onChange={update} />}
@@ -517,8 +523,8 @@ export function App() {
           <div>
             <h3>Abra seu espaço</h3>
             <p>
-              Boa luz e uma mão no quadro. Use a esquerda ou a direita com o
-              indicador esticado.
+              Boa luz e as duas mãos no quadro. Use o indicador na mão de nota e
+              a palma aberta na mão de volume.
             </p>
           </div>
         </article>
@@ -540,8 +546,9 @@ export function App() {
           <div>
             <h3>Dê intensidade</h3>
             <p>
-              Eleve o mesmo indicador para aumentar o volume. Dobre para
-              silenciar e estique novamente para começar outra nota.
+              Eleve a mão de volume com a palma aberta para aumentar; abaixe
+              para diminuir. Feche a palma para manter o volume. Dobre o
+              indicador da mão de nota para silenciar.
             </p>
           </div>
         </article>

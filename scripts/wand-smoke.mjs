@@ -17,7 +17,10 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.addInitScript(() => {
     localStorage.clear();
-    window.hands = [{ x: 0.5, y: 0.5, label: "Left", straight: true }];
+    window.hands = [
+      { x: 0.5, y: 0.5, label: "Right", straight: true },
+      { x: 0.8, y: 0.5, label: "Left", straight: true, palmOpen: true },
+    ];
     window.contexts = [];
     const Native = window.AudioContext;
     window.AudioContext = class extends Native {
@@ -35,7 +38,7 @@ try {
   await page.route("**/src/vision/HandTracker.ts*", (route) =>
     route.fulfill({
       contentType: "application/javascript",
-      body: `export class HandTracker {delegate='SIMULATED';static async create(){return new HandTracker()}close(){}detect(){return window.hands.map(h=>{const p=Array.from({length:21},()=>({x:h.x+.1,y:h.y+.2}));for(let i=5;i<=8;i++)p[i]={x:h.x,y:h.y+(8-i)*.04};if(!h.straight)p[8]={...p[6]};return {point:{x:.9,y:.9},landmarks:p,label:h.label,score:.55};});}}`,
+      body: `export class HandTracker {delegate='SIMULATED';static async create(){return new HandTracker()}close(){}detect(){return window.hands.map(h=>{const p=Array.from({length:21},()=>({x:h.x+.1,y:h.y+.2}));for(let i=5;i<=8;i++)p[i]={x:h.x,y:h.y+(8-i)*.04};if(!h.straight)p[8]={...p[6]};return {point:{x:h.x,y:h.y},landmarks:p,label:h.label,score:1,palmOpen:h.palmOpen};});}}`,
     }),
   );
   await page.goto(process.env.TEST_URL || "http://127.0.0.1:5174/");
@@ -74,13 +77,47 @@ try {
     window.level = () => window.manual().peak;
   });
   await page.waitForFunction(() => window.level() > 0.001);
+  const volumeHand = await page.evaluate(() => window.hands.pop());
+  await page.waitForFunction(
+    () =>
+      window.level() < 0.0001 && document.querySelector("meter").value === 0,
+  );
+  await page.evaluate((h) => window.hands.push(h), volumeHand);
+  await page.waitForFunction(() => window.level() > 0.001);
   const volume = await page.locator("meter").evaluate((e) => e.value);
   await page.evaluate(() => {
-    window.hands[0].y = 0.2;
+    window.hands[1].y = 0.2;
   });
   await page.waitForFunction(
     (v) => document.querySelector("meter").value > v * 1.5,
     volume,
+  );
+  const held = await page.locator("meter").evaluate((e) => e.value);
+  await page.evaluate(() => {
+    window.hands[1].palmOpen = false;
+    window.hands[1].y = 0.8;
+    window.hands[0].y = 0.1;
+  });
+  await page.waitForTimeout(600);
+  if (
+    Math.abs((await page.locator("meter").evaluate((e) => e.value)) - held) >
+    0.005
+  )
+    throw Error("Closed palm or left hand changed volume");
+  await page.evaluate(() => {
+    window.hands[1].palmOpen = true;
+    window.hands[1].y = 0.7;
+  });
+  await page.waitForFunction(
+    (v) => document.querySelector("meter").value < v / 2,
+    held,
+  );
+  await page.evaluate(() => {
+    window.hands[1].y = 0.2;
+  });
+  await page.waitForFunction(
+    (v) => document.querySelector("meter").value > v * 0.9,
+    held,
   );
   await page.evaluate(() => {
     window.hands[0].straight = false;
@@ -90,7 +127,7 @@ try {
       window.level() < 0.0001 && document.querySelector("meter").value === 0,
   );
   await page.evaluate(() => {
-    window.hands = [{ x: 0.5, y: 0.3, label: "Right", straight: true }];
+    window.hands[0].straight = true;
   });
   await page.waitForFunction(() => window.level() > 0.001);
   await page
@@ -173,8 +210,8 @@ try {
     throw Error("Overflow");
   if (errors.length) throw Error(errors.join("\n"));
   const report = {
-    singleLeft: true,
-    singleRight: true,
+    separateHands: true,
+    closedPalmHoldsVolume: true,
     foldedSilent: true,
     oneTarget: true,
     advanceOnMatch: true,

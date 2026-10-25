@@ -50,7 +50,7 @@ export function SettingsPanel({
               })
             }
           >
-            <option value="wand">Varinha · indicador de qualquer mão</option>
+            <option value="wand">Indicador na nota · palma no volume</option>
             <option value="antennas">Antenas fixas · treino</option>
             <option value="screen">Eixos da tela · modo anterior</option>
           </select>
@@ -94,7 +94,7 @@ export function SettingsPanel({
             )}
           </>
         )}
-        {s.controlMode !== "wand" && (
+        {
           <>
             <label>
               Identificação das mãos
@@ -131,7 +131,7 @@ export function SettingsPanel({
               </select>
             </label>
           </>
-        )}
+        }
         {number("fMin", "Frequência mínima (Hz)", 40, 1800, 10)}
         {number("fMax", "Frequência máxima (Hz)", 50, 4000, 10)}
         {s.controlMode !== "antennas" && (
@@ -163,7 +163,7 @@ export function SettingsPanel({
         {number("delay", "Delay", 0, 0.3, 0.01)}
         {toggle("invertPitch", "Inverter eixo de pitch")}
         {toggle("invertVolume", "Inverter eixo de volume")}
-        {s.controlMode !== "wand" && (
+        {
           <label className="check">
             <input
               type="checkbox"
@@ -172,11 +172,11 @@ export function SettingsPanel({
             />
             Inverter mãos: direita na nota, esquerda no volume
           </label>
-        )}
+        }
       </div>
       <p>
         {s.controlMode === "wand"
-          ? "Uma mão basta: indicador esticado toca, dobrado silencia. Horizontal controla a nota; altura controla o volume. Se as duas estiverem esticadas, mantemos a mão ativa."
+          ? "Indicador esticado controla a nota na horizontal; dobrado silencia. A outra mão, com a palma aberta, ajusta volume pela altura; fechada mantém o valor. Mantenha as duas mãos visíveis."
           : s.pitchLeft
             ? "Mão esquerda: nota. Mão direita: volume."
             : "Mão direita: nota. Mão esquerda: volume."}{" "}

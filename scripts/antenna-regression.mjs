@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+﻿import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 const browser = await chromium.launch({
   channel: "chrome",
@@ -19,7 +19,7 @@ try {
     if (!localStorage.getItem("air-theremin-settings"))
       localStorage.setItem(
         "air-theremin-settings",
-        JSON.stringify({ controlMode: "antennas", pitchLeft: false, handLayoutVersion: 2 }),
+        JSON.stringify({ controlMode: "antennas", pitchLeft: false, handLayoutVersion: 3 }),
       );
     window.testHands = [
       { x: 0.25, y: 0.6 },
@@ -184,3 +184,4 @@ try {
 } finally {
   await browser.close();
 }
+

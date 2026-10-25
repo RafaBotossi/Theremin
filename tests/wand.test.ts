@@ -15,21 +15,25 @@ function hand(x: number, label = "Left"): Hand {
     landmarks[id] = { x, y: 0.7 - (id - 5) * 0.1, z: 0 };
   return { point: { x: 0.9, y: 0.9 }, landmarks, label, score: 0.5 };
 }
-it("qualquer mão esticada controla as duas funções usando apenas o indicador", () => {
-  for (const label of ["Left", "Right"]) {
-    const h = hand(0.5, label);
-    expect(selectHands([h], defaults)).toEqual({ pitch: h, volume: h });
-    expect(pitchPoint(h, defaults)).toBe(h.landmarks[8]);
-    const pitch = pitchControl(h, defaults),
-      volume = volumeControl(h, defaults);
-    h.landmarks[20] = { x: 0, y: 0 };
-    h.point = { x: 0, y: 0 };
-    expect(pitchControl(h, defaults)).toBe(pitch);
-    expect(volumeControl(h, defaults)).toBe(volume);
-    h.landmarks[8].y = 0.2;
-    expect(volumeControl(h, defaults)).toBeGreaterThan(volume);
-  }
+it("separa indicador esquerdo e volume direito, inclusive ao cruzar as mãos", () => {
+  const left = { ...hand(0.8, "Right"), score: 1 };
+  const right = { ...hand(0.2, "Left"), score: 1 };
+  expect(selectHands([right, left], defaults)).toEqual({
+    pitch: left,
+    volume: right,
+  });
+  expect(selectHands([left], defaults).volume).toBeUndefined();
+  expect(selectHands([right], defaults).pitch).toBeUndefined();
+  expect(pitchPoint(left, defaults)).toBe(left.landmarks[8]);
+  const volume = volumeControl(right, defaults);
+  left.landmarks[8].y = 0.1;
+  expect(volumeControl(right, defaults)).toBe(volume);
+  right.landmarks = right.landmarks.map((p) => ({ ...p, y: p.y - 0.2 }));
+  expect(volumeControl(right, defaults)).toBeGreaterThan(volume);
+  left.landmarks[8] = { ...left.landmarks[6] };
+  expect(selectHands([right, left], defaults).pitch).toBeUndefined();
 });
+
 it("dobra silencia; extensão independe de escala, rotação e distância", () => {
   const h = hand(0.5);
   expect(indexExtension(h.landmarks)).toBeCloseTo(1);

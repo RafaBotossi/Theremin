@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Hand, Settings } from "../types/theremin";
 import { selectHands } from "../mapping/gestureMapping";
 import { pitchDistance, pitchPoint } from "../mapping/antennaMapping";
+import { hasOpenPalm, palmPoint } from "../vision/openPalm";
 
 export function CalibrationWizard({
   hands,
@@ -18,7 +19,7 @@ export function CalibrationWizard({
 }) {
   const presence =
     settings.controlMode === "wand"
-      ? "Mostre uma mão com o indicador esticado. O avanço é automático."
+      ? "Mostre o indicador da mão de nota e a palma aberta da mão de volume. O avanço é automático."
       : "Mostre as duas mãos. O avanço é automático.";
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -54,12 +55,15 @@ export function CalibrationWizard({
       }
       const roles = selectHands(hands.current, settings);
       const fresh = now - frameTime.current <= 200;
+      const volumeReady =
+        !!roles.volume &&
+        (settings.controlMode !== "wand" || hasOpenPalm(roles.volume));
       const available =
         step === 0
-          ? !!roles.pitch && !!roles.volume
+          ? !!roles.pitch && volumeReady
           : step === 1
             ? !!roles.pitch
-            : !!roles.volume;
+            : volumeReady;
       if (!fresh || !available) {
         if (step === 0) {
           captured = 0;
@@ -68,7 +72,9 @@ export function CalibrationWizard({
         setMessage(
           step === 0
             ? presence
-            : "Contagem pausada. Mostre a mão e mantenha o indicador esticado.",
+            : step === 2
+              ? "Contagem pausada. Mostre a mão de volume com a palma aberta."
+              : "Contagem pausada. Mostre a mão de nota com o indicador esticado.",
         );
         return;
       }
@@ -82,7 +88,7 @@ export function CalibrationWizard({
               ? pitchDistance(roles.pitch!, settings)
               : pitchPoint(roles.pitch!, settings).x
             : settings.controlMode === "wand"
-              ? pitchPoint(roles.volume!, settings).y
+              ? palmPoint(roles.volume!).y
               : roles.volume!.point.y;
         min = Math.min(min, value);
         max = Math.max(max, value);
@@ -139,13 +145,13 @@ export function CalibrationWizard({
         {
           [
             settings.controlMode === "wand"
-              ? "Estique o indicador de uma mão"
+              ? "Mostre o indicador de nota e a palma de volume"
               : "Mostre as duas mãos",
             settings.controlMode === "wand"
               ? "Mova o indicador ↔ para calibrar notas"
               : "Mova a mão de pitch ↔",
             settings.controlMode === "wand"
-              ? "Mova o indicador ↕ para calibrar volume"
+              ? "Mova a palma aberta ↕ para calibrar volume"
               : "Mova a mão de volume ↕",
           ][step]
         }
@@ -154,7 +160,7 @@ export function CalibrationWizard({
         {
           [
             settings.controlMode === "wand"
-              ? "Use qualquer mão, com o indicador esticado por 2 segundos. O som fica pausado até terminar."
+              ? "Mão de nota: indicador esticado. Mão de volume: palma aberta. Mantenha por 2 segundos; o som fica pausado até terminar."
               : "Mantenha as palmas no quadro por 2 segundos. O som fica pausado até terminar.",
             settings.controlMode === "antennas"
               ? "Aproxime e afaste as pontas dos dedos da haste por 6 s, no pequeno alcance que quer usar. O dedo marcado controla a nota."

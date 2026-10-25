@@ -1,5 +1,6 @@
 import type { Hand, Settings } from "../types/theremin";
 import { clamp, normalized } from "./gestureMapping";
+import { palmPoint } from "../vision/openPalm";
 
 export function antennaGeometry(s: Settings) {
   return {
@@ -44,7 +45,7 @@ export function pitchControl(hand: Hand, s: Settings) {
 export function volumeControl(hand: Hand, s: Settings) {
   if (s.controlMode !== "antennas")
     return normalized(
-      pitchPoint(hand, s).y,
+      (s.controlMode === "wand" ? palmPoint(hand) : pitchPoint(hand, s)).y,
       s.volumeMin,
       s.volumeMax,
       !s.invertVolume,
@@ -77,8 +78,10 @@ export function outsideField(
         (pitchPoint(pitch, s).x < s.pitchMin ||
           pitchPoint(pitch, s).x > s.pitchMax)) ||
       (volume &&
-        (pitchPoint(volume, s).y < s.volumeMin ||
-          pitchPoint(volume, s).y > s.volumeMax))
+        ((s.controlMode === "wand" ? palmPoint(volume) : pitchPoint(volume, s))
+          .y < s.volumeMin ||
+          (s.controlMode === "wand" ? palmPoint(volume) : pitchPoint(volume, s))
+            .y > s.volumeMax))
     );
   const d = pitch ? pitchDistance(pitch, s) : 0;
   return !!(

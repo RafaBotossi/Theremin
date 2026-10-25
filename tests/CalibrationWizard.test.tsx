@@ -16,12 +16,13 @@ const hand = (x: number, y: number): Hand => ({
   landmarks: [],
 });
 beforeEach(() => vi.useFakeTimers());
-it("calibra ambas as funções com um único indicador e pausa se dobrado", () => {
+it("calibra indicador e palma separadamente e pausa quando fechados", () => {
   const s = setup("wand");
   const h = hand(0.9, 0.9);
   h.landmarks = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.5 }));
   h.indexExtension = 1;
-  s.hands.current = [h];
+  const volume = { ...hand(0.2, 0.5), palmOpen: true };
+  s.hands.current = [h, volume];
   s.frames(2000);
   s.frames(3000);
   h.indexExtension = 0;
@@ -32,8 +33,12 @@ it("calibra ambas as funções com um único indicador e pausa se dobrado", () =
     h.landmarks[8] = { x: i % 2 ? 0.7 : 0.3, y: 0.5 };
   });
   s.frames(3000);
+  volume.palmOpen = false;
+  s.frames(7000);
+  expect(s.onSave).not.toHaveBeenCalled();
+  volume.palmOpen = true;
   s.frames(6000, (i) => {
-    h.landmarks[8].y = i % 2 ? 0.8 : 0.2;
+    volume.point.y = i % 2 ? 0.8 : 0.2;
   });
   expect(s.onSave).toHaveBeenCalledOnce();
   expect(s.onSave.mock.calls[0][0]).toMatchObject({

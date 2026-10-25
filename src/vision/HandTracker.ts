@@ -3,6 +3,7 @@ import type { Hand, Settings } from "../types/theremin";
 import { fingerOpenness } from "./fingerOpenness";
 import { indexExtension } from "./indexExtension";
 import { thumbVibrato } from "./thumbVibrato";
+import { openPalm } from "./openPalm";
 export class HandTracker {
   private model: HandLandmarker;
   readonly delegate: string;
@@ -53,6 +54,14 @@ export class HandTracker {
         score: result.handedness[i]?.[0]?.score ?? 0,
         landmarks: points.map((p) => ({ x: 1 - p.x, y: p.y })),
         openness: fingerOpenness(result.worldLandmarks?.[i] ?? points),
+        palmOpen: openPalm(
+          result.worldLandmarks?.[i] ??
+            points.map((p) => ({
+              x: p.x,
+              y: (p.y * video.videoHeight) / (video.videoWidth || 1),
+              z: p.z,
+            })),
+        ),
         indexExtension: indexExtension(
           result.worldLandmarks?.[i] ??
             points.map((p) => ({

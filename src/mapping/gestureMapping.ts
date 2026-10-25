@@ -59,11 +59,7 @@ export function noteName(f: number) {
     (Math.floor(m / 12) - 1)
   );
 }
-export function selectHands(hands: Hand[], s: Settings) {
-  if (s.controlMode === "wand") {
-    const hand = selectWand(hands);
-    return { pitch: hand, volume: hand };
-  }
+export function selectHands(hands: Hand[], s: Settings, previous?: Hand) {
   // score is handedness certainty, NOT confidence that a hand exists.
   // Detection/presence confidence is already enforced by HandLandmarker.
   const valid = hands.filter(
@@ -82,9 +78,13 @@ export function selectHands(hands: Hand[], s: Settings) {
     ? valid.find((h) => h.label === "Right")
     : valid.find((h) => h.point.x < 0.5);
   // MediaPipe sees unmirrored camera input; its selfie handedness is reversed.
-  return s.pitchLeft
+  const roles = s.pitchLeft
     ? { pitch: left, volume: right }
     : { pitch: right, volume: left };
+  if (s.controlMode === "wand") {
+    roles.pitch = selectWand(roles.pitch ? [roles.pitch] : [], previous);
+  }
+  return roles;
 }
 export class TrackingGate {
   private lastPitch = -Infinity;

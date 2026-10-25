@@ -17,7 +17,7 @@ import {
   TrackingGate,
 } from "../mapping/gestureMapping";
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
-import { selectWand } from "../vision/indexExtension";
+import { hasOpenPalm, palmPoint } from "../vision/openPalm";
 const connections = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -139,6 +139,7 @@ export function useHandTracking(
         interval = 33;
       let expression = current.current.settings.brightness;
       let wand: Hand | undefined;
+      let heldVolume = 0;
       timer = window.setInterval(() => {
         const now = performance.now();
         if (document.hidden || !gate.fresh(now)) {
@@ -193,11 +194,8 @@ export function useHandTracking(
           frameTime.current = detectedAt;
           interval = inferenceMs > 40 ? 66 : 33;
           const previousWand = wand;
-          wand = s.controlMode === "wand" ? selectWand(found, wand) : undefined;
-          const roles =
-            s.controlMode === "wand"
-              ? { pitch: wand, volume: wand }
-              : selectHands(found, s);
+          const roles = selectHands(found, s, wand);
+          wand = s.controlMode === "wand" ? roles.pitch : undefined;
           if (s.controlMode === "wand" && (!wand || !previousWand)) {
             pitchFilter.reset();
             volumeFilter.reset();
@@ -223,12 +221,13 @@ export function useHandTracking(
             );
             frequency = quantize(frequencyAt(t, s.fMin, s.fMax), s.scale);
           } else if (!safe) pitchFilter.reset();
+          if (
+            roles.volume &&
+            (s.controlMode !== "wand" || hasOpenPalm(roles.volume))
+          )
+            heldVolume = volumeControl(roles.volume, s);
           if (roles.volume && safe) {
-            const t = volumeFilter.update(
-              volumeControl(roles.volume, s),
-              dt,
-              s.smoothing,
-            );
+            const t = volumeFilter.update(heldVolume, dt, s.smoothing);
             gain = t * t * s.maxGain;
           } else volumeFilter.reset();
           if (current.current.muted || current.current.calibrating) gain = 0;
@@ -269,9 +268,11 @@ export function useHandTracking(
                 ctx.fill();
               }
               const control =
-                s.controlMode === "wand" || h === roles.pitch
+                h === roles.pitch
                   ? pitchPoint(h, s)
-                  : h.point;
+                  : s.controlMode === "wand"
+                    ? palmPoint(h)
+                    : h.point;
               if (h === roles.pitch && s.controlMode !== "screen") {
                 ctx.beginPath();
                 ctx.arc(
@@ -288,8 +289,12 @@ export function useHandTracking(
               const label =
                 s.controlMode === "wand"
                   ? h === wand
-                    ? "VARINHA"
-                    : "ESTIQUE O INDICADOR"
+                    ? "NOTA"
+                    : h === roles.volume
+                      ? hasOpenPalm(h)
+                        ? "VOLUME · PALMA ABERTA"
+                        : "VOLUME MANTIDO"
+                      : "ESTIQUE O INDICADOR"
                   : h === roles.pitch
                     ? "PITCH"
                     : h === roles.volume

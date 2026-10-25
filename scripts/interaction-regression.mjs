@@ -1,4 +1,4 @@
-// Controlled landmarks exercise UI and real Web Audio without a physical user.
+﻿// Controlled landmarks exercise UI and real Web Audio without a physical user.
 // Only the dev-server HandTracker module is replaced in this browser context.
 import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -23,7 +23,7 @@ try {
       JSON.stringify({
         controlMode: "screen",
         pitchLeft: false,
-        handLayoutVersion: 2,
+        handLayoutVersion: 3,
       }),
     );
     window.testHands = [
@@ -182,3 +182,4 @@ try {
 } finally {
   await browser.close();
 }
+

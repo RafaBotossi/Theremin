@@ -34,7 +34,9 @@ it("corrige configuração antiga e mantém régua na haste ao trocar lados", ()
   expect(side(".volume-antenna")).toBeCloseTo(65);
   for (const line of view.container.querySelectorAll<HTMLElement>(".note-line"))
     expect(parseFloat(line.style.left)).toBeLessThan(50);
-  expect(screen.getByLabelText("Identificação das mãos")).toHaveValue("screen");
+  expect(screen.getByLabelText("Identificação das mãos")).toHaveValue(
+    "anatomical",
+  );
   fireEvent.click(
     screen.getByLabelText("Inverter mãos: direita na nota, esquerda no volume"),
   );

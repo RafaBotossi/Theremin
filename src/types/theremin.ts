@@ -8,6 +8,7 @@ export interface Hand {
   score: number;
   landmarks: Point[];
   openness?: number;
+  palmOpen?: boolean;
   indexExtension?: number;
   vibratoExpression?: number;
 }
@@ -52,7 +53,7 @@ export interface Settings {
   delay: number;
 }
 export const defaults: Settings = {
-  handLayoutVersion: 2,
+  handLayoutVersion: 3,
   controlMode: "wand",
   antennaX: 0.9,
   antennaY: 0.8,
@@ -71,7 +72,7 @@ export const defaults: Settings = {
   invertPitch: false,
   invertVolume: false,
   pitchLeft: true,
-  assignment: "screen",
+  assignment: "anatomical",
   landmark: "palm",
   waveform: "theremin",
   scale: "free",
@@ -166,7 +167,8 @@ export function loadSettings(): Settings {
     // Subsequent explicit swaps carry this version and remain persistent.
     if (saved.handLayoutVersion !== defaults.handLayoutVersion) {
       saved.pitchLeft = true;
-      saved.assignment = "screen";
+      saved.assignment = "anatomical";
+      saved.invertVolume = false;
       saved.controlMode = "wand";
     }
     // Migrate only the old untouched sound. Keep custom sounds and calibration.
