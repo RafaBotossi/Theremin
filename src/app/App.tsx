@@ -5,13 +5,10 @@ import { noteName } from "../mapping/gestureMapping";
 import { CalibrationWizard } from "../components/CalibrationWizard";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { NoteGuide } from "../components/NoteGuide";
-import { SoundPreview } from "../components/SoundPreview";
 import { applyPreset, presets } from "../audio/presets";
 import { AntennaOverlay } from "../components/AntennaOverlay";
-import { PracticePanel } from "../components/PracticePanel";
 import { SongPanel } from "../components/SongPanel";
 import { emptyGuide } from "../music/song";
-import { PitchFeedback } from "../components/PitchFeedback";
 import { AudioLab } from "../components/AudioLab";
 export function App() {
   const [lab, setLab] = useState(false);
@@ -29,16 +26,9 @@ export function App() {
     calibrating,
   );
   const recorder = useRef<MediaRecorder | null>(null);
-  const [practiceCue, setPracticeCue] = useState("");
   const clipRef = useRef("");
   const running = session.status === "running";
   const r = session.reading;
-  const cents = Math.round(
-    (69 +
-      12 * Math.log2(r.frequency / 440) -
-      Math.round(69 + 12 * Math.log2(r.frequency / 440))) *
-      100,
-  );
   function update(s: Settings) {
     const clean = sanitize(s);
     setSettings(clean);
@@ -129,7 +119,7 @@ export function App() {
       />
     );
   return (
-    <main>
+    <main className="instrument-app">
       <header>
         <a className="brand" href={import.meta.env.BASE_URL}>
           <span className="brand-icon">∿</span> AIR THEREMIN
@@ -147,25 +137,44 @@ export function App() {
           Configurações
         </button>
       </header>
-      <section className="intro">
-        <p className="eyebrow">UM INSTRUMENTO. NENHUM TOQUE.</p>
-        <h1>
-          A música está
-          <br />
-          nas suas <em>mãos.</em>
-        </h1>
-        <p>
-          Explore o espaço entre o movimento e o som.
-          <br />
-          Sua webcam vira um instrumento — só seu.
-        </p>
-      </section>
+      <div
+        className="instrument-toolbar"
+        role="group"
+        aria-label="Controles do instrumento"
+      >
+        <div className="buttons">
+          <button
+            disabled={!running}
+            aria-pressed={muted}
+            onClick={() => setMuted(!muted)}
+          >
+            {muted ? "Desmutar" : "Mutar"}
+          </button>
+          <button disabled={session.status === "idle"} onClick={stop}>
+            Parar
+          </button>
+          <button
+            disabled={!running}
+            onClick={() => setCalibrating(!calibrating)}
+          >
+            Calibrar
+          </button>
+          <button disabled={!running} aria-pressed={recording} onClick={record}>
+            {recording ? "Encerrar gravação" : "Gravar"}
+          </button>
+        </div>
+        {clip && (
+          <a
+            className="download"
+            href={clip.url}
+            download={`air-theremin.${clip.ext}`}
+          >
+            ↓ Baixar gravação
+          </a>
+        )}
+      </div>
       <div className="instrument">
         <section className="stage-panel" aria-label="Câmera e rastreamento">
-          <div className="stage-top">
-            <span>01 / ESPAÇO DE EXPRESSÃO</span>
-            <span>{running ? "● AO VIVO" : "○ CÂMERA DESLIGADA"}</span>
-          </div>
           <div className={`camera-stage${running ? " live" : ""}`}>
             <video
               ref={session.video}
@@ -203,15 +212,6 @@ export function App() {
             )}
             {!running && (
               <div className="stage-empty">
-                <div className="orbit">∿</div>
-                <h2>Encontre sua frequência</h2>
-                <p>
-                  {settings.controlMode === "wand"
-                    ? "Estique o indicador da mão de nota e abra a palma da mão de volume."
-                    : "Posicione as duas mãos à frente da câmera."}
-                  <br />
-                  Um pouco de espaço. Infinitas possibilidades.
-                </p>
                 <button
                   className="primary"
                   disabled={session.status === "loading"}
@@ -221,17 +221,10 @@ export function App() {
                     ? "Preparando o instrumento…"
                     : "Iniciar câmera e áudio"}
                 </button>
-                <small>Vídeo e áudio ficam no seu dispositivo.</small>
               </div>
             )}
             {running && (
               <>
-                {settings.controlMode === "antennas" &&
-                  !calibrating &&
-                  !muted &&
-                  !songGuide.active && (
-                    <div className="practice-cue">{practiceCue}</div>
-                  )}
                 <div
                   className="stage-guide"
                   style={{
@@ -278,21 +271,6 @@ export function App() {
               )}
             </div>
           )}
-          <PitchFeedback
-            reading={r}
-            target={songGuide.current}
-            guideActive={songGuide.active}
-            listening={songGuide.listening}
-            running={running}
-          />
-          <div className="stage-bottom">
-            <span>
-              {running
-                ? "Imagem espelhada · mantenha as mãos visíveis"
-                : "A câmera será ativada somente ao iniciar"}
-            </span>
-            <span>{r.fps ? r.fps.toFixed(0) + " FPS" : "— FPS"}</span>
-          </div>
           {calibrating && running && (
             <CalibrationWizard
               hands={session.hands}
@@ -310,7 +288,7 @@ export function App() {
           )}
         </section>
         <aside className="console">
-          <p className="eyebrow">02 / SEU SOM</p>
+          <p className="eyebrow">Som</p>
           <div className="presets" role="group" aria-label="Sons prontos">
             {Object.entries(presets).map(([key, preset]) => (
               <button
@@ -344,29 +322,6 @@ export function App() {
               {running && r.pitch ? r.frequency.toFixed(1) : "—"} <b>Hz</b>
             </small>
           </div>
-          <div className="tuning" aria-label="Afinação em cents">
-            <span>
-              {running && r.pitch
-                ? Math.abs(cents) <= 5
-                  ? "Nota centrada"
-                  : `${cents > 0 ? "+" : ""}${cents} cents`
-                : "Siga as notas na régua da câmera"}
-            </span>
-            <span>
-              {settings.scale === "assisted"
-                ? "AJUDA SUAVE"
-                : settings.scale === "free"
-                  ? "LIVRE"
-                  : "ESCALA"}
-            </span>
-          </div>
-          <svg
-            className={running && r.gain > 0 ? "wave playing" : "wave"}
-            viewBox="0 0 300 60"
-            aria-label="Representação decorativa de onda sonora"
-          >
-            <path d="M0 30 Q12 30 20 30 Q30 0 40 30 T60 30 T80 30 T100 30 T120 30 T140 30 T160 30 T180 30 T200 30 T220 30 T240 30 T260 30 Q280 30 300 30" />
-          </svg>
           <div className="volume-label">
             <span>VOLUME</span>
             <span>{Math.round((r.gain / settings.maxGain) * 100) || 0}%</span>
@@ -377,30 +332,6 @@ export function App() {
             max={settings.maxGain || 0.25}
             value={r.gain}
           />
-          <div className="tracking">
-            <span>
-              <span>
-                {settings.controlMode === "wand"
-                  ? "Indicador ativo"
-                  : "Mão de pitch"}
-              </span>
-              <strong>{r.pitch ? "● Detectada" : "○ Ausente"}</strong>
-            </span>
-            <span>
-              <span>
-                {settings.controlMode === "wand"
-                  ? "Controle de volume"
-                  : "Mão de volume"}
-              </span>
-              <strong>
-                {settings.controlMode === "wand"
-                  ? "Valor mantido"
-                  : r.volume
-                    ? "● Detectada"
-                    : "○ Ausente"}
-              </strong>
-            </span>
-          </div>
           <label>
             Timbre
             <select
@@ -437,49 +368,6 @@ export function App() {
               <option value="pentatonic">Pentatônica · Dó maior</option>
             </select>
           </label>
-          <SoundPreview
-            settings={settings}
-            disabled={session.status !== "idle" || songGuide.listening}
-          />
-          <div className="buttons">
-            <button
-              disabled={!running}
-              aria-pressed={muted}
-              onClick={() => setMuted(!muted)}
-            >
-              {muted ? "Desmutar" : "Mutar"}
-            </button>
-            <button disabled={session.status === "idle"} onClick={stop}>
-              Parar
-            </button>
-            <button
-              disabled={!running}
-              onClick={() => setCalibrating(!calibrating)}
-            >
-              Calibrar
-            </button>
-            <button
-              disabled={!running}
-              aria-pressed={recording}
-              onClick={record}
-            >
-              {recording ? "Encerrar gravação" : "Gravar"}
-            </button>
-          </div>
-          {clip && (
-            <a
-              className="download"
-              href={clip.url}
-              download={`air-theremin.${clip.ext}`}
-            >
-              ↓ Baixar gravação
-            </a>
-          )}
-          <small>
-            {r.inferenceMs > 0
-              ? `Inferência: ${r.inferenceMs.toFixed(1)} ms · ${r.delegate}. Não é latência total de áudio.`
-              : "Aguardando seu primeiro movimento."}
-          </small>
         </aside>
       </div>
       {session.error && (
@@ -487,24 +375,11 @@ export function App() {
           {session.error}
         </p>
       )}
-      <div className="session-feedback" role="status" aria-live="polite">
-        {calibrating && running
-          ? "Calibração em andamento: som pausado. Não é preciso clicar para avançar."
-          : muted
-            ? "Som mutado. Use Desmutar para ouvir."
-            : running && settings.maxGain === 0
-              ? "Ganho máximo está em zero. Ajuste-o em Configurações para ouvir."
-              : running && !r.pitch
-                ? "Estique o indicador da mão de nota para tocar. Dobrado, ele silencia."
-                : running && !r.volume
-                  ? "Mostre a mão de volume e eleve-a para aumentar o som."
-                  : running && r.outside
-                    ? "Mão fora da área calibrada: valor limitado à borda."
-                    : notice ||
-                      (running
-                        ? "Indicador na horizontal: nota. Palma da outra mão aberta: ajusta volume; fechada: mantém."
-                        : "")}
-      </div>
+      {(notice || muted || (running && settings.maxGain === 0)) && (
+        <p className="session-feedback" role="status">
+          {notice || (muted ? "Som mutado" : "Volume em zero")}
+        </p>
+      )}
       {config && <SettingsPanel value={settings} onChange={update} />}
       <SongPanel
         reading={r}
@@ -514,57 +389,6 @@ export function App() {
         onSettings={update}
         onGuide={setSongGuide}
       />
-      {settings.controlMode === "antennas" && (
-        <PracticePanel
-          settings={settings}
-          reading={r}
-          running={running}
-          paused={muted || calibrating || songGuide.active}
-          onCue={setPracticeCue}
-        />
-      )}
-      <section className="instructions" aria-label="Como tocar">
-        <article>
-          <span>01</span>
-          <div>
-            <h3>Abra seu espaço</h3>
-            <p>
-              Use o indicador na mão de nota. Mostre a palma da outra mão apenas
-              quando quiser ajustar o volume.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>02</span>
-          <div>
-            <h3>Desenhe a melodia</h3>
-            <p>
-              {settings.controlMode === "wand"
-                ? "Mova somente a ponta do indicador na horizontal para escolher a nota. A barra mostra quanto falta para acertar."
-                : settings.controlMode === "antennas"
-                  ? "Aproxime da haste para subir a nota. Abra e feche levemente os dedos para afinar; oscile a mão para criar seu vibrato."
-                  : "Siga a régua de notas com a mão de pitch. Suba essa mão para abrir o brilho; pequenos movimentos horizontais criam vibrato."}
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>03</span>
-          <div>
-            <h3>Dê intensidade</h3>
-            <p>
-              Eleve a mão de volume com a palma aberta para aumentar; abaixe
-              para diminuir. Feche ou retire essa mão para manter o volume.
-              Dobre o indicador da mão de nota para silenciar.
-            </p>
-          </div>
-        </article>
-      </section>
-      <footer>
-        <span>
-          AIR THEREMIN <span className="dim">/ UM EXPERIMENTO SONORO</span>
-        </span>
-        <span>Sem uploads. Sem contas. Só movimento.</span>
-      </footer>
     </main>
   );
 }

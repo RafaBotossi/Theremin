@@ -1,4 +1,4 @@
-﻿// Controlled landmarks exercise UI and real Web Audio without a physical user.
+// Controlled landmarks exercise UI and real Web Audio without a physical user.
 // Only the dev-server HandTracker module is replaced in this browser context.
 import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -51,7 +51,7 @@ try {
   );
   await page.goto(process.env.TEST_URL || "http://localhost:5173/");
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
-  await page.getByText("● AO VIVO", { exact: true }).waitFor();
+  await page.locator(".camera-stage.live").waitFor();
   const meter = page.getByRole("meter", { name: "Volume" });
   await page.waitForFunction(
     () => Number(document.querySelector("meter").value) > 0,
@@ -152,7 +152,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
-  await page.getByText("● AO VIVO", { exact: true }).waitFor();
+  await page.locator(".camera-stage.live").waitFor();
   await page.getByRole("button", { name: "Calibrar", exact: true }).click();
   await page.screenshot({
     path: "test-results/calibration-mobile.png",
@@ -182,5 +182,3 @@ try {
 } finally {
   await browser.close();
 }
-
-

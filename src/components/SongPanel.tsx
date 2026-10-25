@@ -276,7 +276,6 @@ export function SongPanel({
   return (
     <section className="song-panel" aria-label="Escolha de música">
       <p className="eyebrow">TOQUE UMA MÚSICA</p>
-      <h2>Siga a luz, uma nota de cada vez.</h2>
       <div className="song-controls">
         <label>
           Avanço da música
@@ -336,13 +335,6 @@ export function SongPanel({
             value={Math.round(speed * 100)}
             onChange={(e) => setSpeed(Number(e.target.value) / 100)}
           />
-          <small>
-            {practice
-              ? "No seu ritmo: a velocidade só vale ao ouvir ou seguir o tempo."
-              : speed === 0
-                ? "0% · guia congelado e referência em silêncio"
-                : "1% a 100% · ajuste fino"}
-          </small>
         </div>
         <label>
           Transpor
@@ -372,10 +364,6 @@ export function SongPanel({
             <option value={8}>8 s · subida suave</option>
             <option value={12}>12 s · subida bem lenta</option>
           </select>
-          <small>
-            Tempo na partitura. Aumentar deixa a subida mais lenta; não muda
-            quando tocar.
-          </small>
         </label>
       </div>
       {choice === "ecstasy" && (
@@ -428,24 +416,6 @@ export function SongPanel({
               </select>
             </label>
           </div>
-          <p>
-            Guia solo das quatro páginas do PDF fornecido, com 46 compassos.
-            Pausas, ligaduras e valores rítmicos foram transcritos; acordes
-            foram reduzidos a uma nota. Na introdução, tocamos o motivo repetido
-            do piano.
-          </p>
-          <p>
-            A introdução segue o acompanhamento rápido do piano. Para estudar a
-            melodia, escolha Tema principal · compasso 12 e velocidade de 25% a
-            50%. Reduza Velocidade para ter mais tempo entre as notas;
-            Antecedência visual muda apenas a subida.
-          </p>
-          <p>
-            A partitura indica “Moderately”, sem BPM. A base de {bpm} BPM é
-            ajustável e corresponde a {(bpm * speed).toFixed(0)} BPM nesta
-            velocidade. O prolongamento das fermatas é uma escolha de estudo.
-            Este arranjo não é sincronizado ao vídeo.
-          </p>
         </>
       )}
       {choice === "midi" && (
@@ -479,10 +449,6 @@ export function SongPanel({
               </select>
             </label>
           )}
-          <p>
-            O MIDI fornece notas, durações e andamento. Escolha a trilha solo. O
-            arquivo fica apenas nesta sessão, sem upload.
-          </p>
         </div>
       )}
       <div className="song-transport">
@@ -551,7 +517,7 @@ export function SongPanel({
                 ? "Guia pausado durante mute ou calibração."
                 : enabled
                   ? `${!practice && speed === 0 ? "0% · guia congelado · " : ""}${cue}`
-                  : "Inicie o guia: 3 segundos para posicionar as mãos. Você também pode visualizar sem câmera.")}
+                  : "")}
       </div>
       <progress
         aria-label="Progresso da música"
@@ -564,18 +530,6 @@ export function SongPanel({
             : Math.max(0, time)
         }
       />
-      <p>
-        No guia com tempo, as bolinhas sobem: toque quando chegarem à linha
-        amarela perto do topo e sustente enquanto o alvo ficar amarelo. As
-        linhas verdes mostram onde você está tocando. Em Tocar nota por nota,
-        sustente o alvo por 0,25 s dentro de ±35 cents para avançar no seu
-        ritmo. Para notas repetidas, dobre e estique o indicador. As pausas
-        escritas são livres neste modo; velocidade vale para o guia com tempo e
-        para ouvir. A faixa e a afinação livre são ajustadas ao iniciar; sua
-        calibração é mantida. Use Ouvir música para escutar a melodia sem
-        câmera. Durante a referência, o som das mãos fica silenciado. Em 0%, o
-        guia congela e a referência fica em silêncio.
-      </p>
     </section>
   );
 }

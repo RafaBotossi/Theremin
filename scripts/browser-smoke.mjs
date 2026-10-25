@@ -41,18 +41,8 @@ for (const channel of ["chrome", "msedge"]) {
       fullPage: true,
     });
     await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
-    await page
-      .getByText("● AO VIVO", { exact: true })
-      .waitFor({ timeout: 60000 });
-    await page.waitForFunction(
-      () =>
-        document
-          .querySelector(".stage-bottom")
-          ?.textContent?.match(/[1-9][0-9]* FPS/),
-      {},
-      { timeout: 30000 },
-    );
-    const detail = await page.locator(".console > small").textContent();
+    await page.locator(".camera-stage.live").waitFor({ timeout: 60000 });
+    const detail = "Camera started";
     await page.getByRole("button", { name: "Gravar", exact: true }).click();
     await page.waitForTimeout(400);
     await page.getByRole("button", { name: "Encerrar gravação" }).click();

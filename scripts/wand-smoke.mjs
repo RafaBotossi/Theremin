@@ -45,7 +45,7 @@ try {
   if (await page.locator(".volume-antenna").count())
     throw Error("Circular antenna still shown");
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
-  await page.getByText("● AO VIVO", { exact: true }).waitFor();
+  await page.locator(".camera-stage.live").waitFor();
   await page.waitForFunction(
     () => document.querySelector("meter").value > 0.01,
   );

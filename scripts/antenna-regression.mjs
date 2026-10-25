@@ -1,4 +1,4 @@
-﻿import { chromium } from "@playwright/test";
+import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 const browser = await chromium.launch({
   channel: "chrome",
@@ -19,7 +19,11 @@ try {
     if (!localStorage.getItem("air-theremin-settings"))
       localStorage.setItem(
         "air-theremin-settings",
-        JSON.stringify({ controlMode: "antennas", pitchLeft: false, handLayoutVersion: 4 }),
+        JSON.stringify({
+          controlMode: "antennas",
+          pitchLeft: false,
+          handLayoutVersion: 4,
+        }),
       );
     window.testHands = [
       { x: 0.25, y: 0.6 },
@@ -37,7 +41,7 @@ try {
   await page.goto(process.env.TEST_URL || "http://127.0.0.1:5174/");
   await page.getByRole("button", { name: "Treino", exact: true }).click();
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
-  await page.getByText("● AO VIVO", { exact: true }).waitFor();
+  await page.locator(".camera-stage.live").waitFor();
   await page.waitForFunction(
     () =>
       Math.abs(
@@ -153,7 +157,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
-  await page.getByText("● AO VIVO", { exact: true }).waitFor();
+  await page.locator(".camera-stage.live").waitFor();
   await page.getByRole("button", { name: "Calibrar", exact: true }).click();
   await page.getByRole("heading", { name: "Mova a mão de pitch ↔" }).waitFor();
   await page.screenshot({
@@ -184,5 +188,3 @@ try {
 } finally {
   await browser.close();
 }
-
-
