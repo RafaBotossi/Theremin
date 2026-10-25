@@ -7,8 +7,58 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SongPanel } from "../src/components/SongPanel";
-import { defaults } from "../src/types/theremin";
+import { defaults, emptyReading } from "../src/types/theremin";
 beforeEach(() => vi.useFakeTimers());
+it("nota por nota aguarda acerto e não revela o próximo alvo", () => {
+  const onGuide = vi.fn(),
+    onSettings = vi.fn();
+  const props = {
+    settings: defaults,
+    blocked: false,
+    running: true,
+    onGuide,
+    onSettings,
+  };
+  const view = render(<SongPanel {...props} reading={emptyReading} />);
+  fireEvent.change(screen.getByLabelText("Música"), {
+    target: { value: "demo" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Tocar nota por nota" }));
+  act(() => vi.advanceTimersByTime(20000));
+  expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 60, next: null });
+  for (let i = 0; i < 5; i++) {
+    act(() => vi.advanceTimersByTime(100));
+    view.rerender(
+      <SongPanel
+        {...props}
+        reading={{
+          ...emptyReading,
+          pitch: true,
+          volume: true,
+          gain: 0.1,
+          frequency: 440 * 2 ** ((60 - 69) / 12),
+        }}
+      />,
+    );
+  }
+  expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 62, next: null });
+  act(() => vi.advanceTimersByTime(20000));
+  expect(onGuide.mock.lastCall?.[0].current).toBe(62);
+  view.rerender(
+    <SongPanel
+      {...props}
+      blocked
+      reading={{
+        ...emptyReading,
+        pitch: true,
+        volume: true,
+        gain: 0.1,
+        frequency: 440 * 2 ** ((62 - 69) / 12),
+      }}
+    />,
+  );
+  expect(screen.getByRole("button", { name: "Retomar guia" })).toBeDisabled();
+});
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -34,9 +84,9 @@ it("conta três segundos, destaca notas, pausa e encerra o guia", () => {
     scale: "free",
   });
   act(() => vi.advanceTimersByTime(3100));
-  expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 69, next: 76 });
+  expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 69, next: null });
   act(() => vi.advanceTimersByTime(625));
-  expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 76, next: 79 });
+  expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 76, next: null });
   fireEvent.click(screen.getByRole("button", { name: "Pausar guia" }));
   const count = onGuide.mock.calls.length;
   act(() => vi.advanceTimersByTime(2000));

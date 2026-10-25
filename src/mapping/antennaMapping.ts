@@ -10,6 +10,7 @@ export function antennaGeometry(s: Settings) {
   };
 }
 export function pitchPoint(hand: Hand, s: Settings) {
+  if (s.controlMode === "wand") return hand.landmarks[8] ?? hand.point;
   if (s.controlMode !== "antennas") return hand.point;
   const a = antennaGeometry(s);
   const tips = [4, 8, 12, 16, 20]
@@ -26,9 +27,9 @@ export function pitchDistance(hand: Hand, s: Settings) {
   return Math.max(0, (a.pitchX - pitchPoint(hand, s).x) * a.direction);
 }
 export function pitchControl(hand: Hand, s: Settings) {
-  if (s.controlMode === "screen")
+  if (s.controlMode !== "antennas")
     return normalized(
-      hand.point.x,
+      pitchPoint(hand, s).x,
       s.pitchMin,
       s.pitchMax,
       s.invertPitch,
@@ -41,9 +42,9 @@ export function pitchControl(hand: Hand, s: Settings) {
   return s.invertPitch ? 1 - t : t;
 }
 export function volumeControl(hand: Hand, s: Settings) {
-  if (s.controlMode === "screen")
+  if (s.controlMode !== "antennas")
     return normalized(
-      hand.point.y,
+      pitchPoint(hand, s).y,
       s.volumeMin,
       s.volumeMax,
       !s.invertVolume,
@@ -57,7 +58,7 @@ export function pitchScreenPosition(f: number, s: Settings) {
   const normalized = Math.log(f / s.fMin) / Math.log(s.fMax / s.fMin);
   const directed = s.invertPitch ? 1 - normalized : normalized;
   const raw = (directed - 0.5) / s.sensitivity + 0.5;
-  if (s.controlMode === "screen")
+  if (s.controlMode !== "antennas")
     return s.pitchMin + raw * (s.pitchMax - s.pitchMin);
   const a = antennaGeometry(s);
   return (
@@ -70,10 +71,14 @@ export function outsideField(
   volume: Hand | undefined,
   s: Settings,
 ) {
-  if (s.controlMode === "screen")
+  if (s.controlMode !== "antennas")
     return !!(
-      (pitch && (pitch.point.x < s.pitchMin || pitch.point.x > s.pitchMax)) ||
-      (volume && (volume.point.y < s.volumeMin || volume.point.y > s.volumeMax))
+      (pitch &&
+        (pitchPoint(pitch, s).x < s.pitchMin ||
+          pitchPoint(pitch, s).x > s.pitchMax)) ||
+      (volume &&
+        (pitchPoint(volume, s).y < s.volumeMin ||
+          pitchPoint(volume, s).y > s.volumeMax))
     );
   const d = pitch ? pitchDistance(pitch, s) : 0;
   return !!(

@@ -10,7 +10,7 @@ import { applyPreset, presets } from "../audio/presets";
 import { AntennaOverlay } from "../components/AntennaOverlay";
 import { PracticePanel } from "../components/PracticePanel";
 import { SongPanel } from "../components/SongPanel";
-import { emptyGuide, midiFrequency } from "../music/song";
+import { emptyGuide } from "../music/song";
 import { PitchFeedback } from "../components/PitchFeedback";
 export function App() {
   const [settings, setSettings] = useState(loadSettings),
@@ -186,7 +186,9 @@ export function App() {
                 <div className="orbit">∿</div>
                 <h2>Encontre sua frequência</h2>
                 <p>
-                  Posicione as duas mãos à frente da câmera.
+                  {settings.controlMode === "wand"
+                    ? "Estique o indicador de qualquer mão à frente da câmera."
+                    : "Posicione as duas mãos à frente da câmera."}
                   <br />
                   Um pouco de espaço. Infinitas possibilidades.
                 </p>
@@ -216,15 +218,24 @@ export function App() {
                     flexDirection: settings.pitchLeft ? "row-reverse" : "row",
                   }}
                 >
-                  <span>
-                    {settings.pitchLeft ? "DIREITA" : "ESQUERDA"} ↕ VOLUME
-                  </span>
-                  <span>
-                    {settings.pitchLeft ? "ESQUERDA" : "DIREITA"}{" "}
-                    {settings.controlMode === "antennas"
-                      ? "↔ DISTÂNCIA + DEDOS"
-                      : "↔ NOTAS · ↕ BRILHO"}
-                  </span>
+                  {settings.controlMode === "wand" ? (
+                    <>
+                      <span>INDICADOR ↔ NOTA · ↕ VOLUME</span>
+                      <span>DOBRE PARA SILENCIAR</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        {settings.pitchLeft ? "DIREITA" : "ESQUERDA"} ↕ VOLUME
+                      </span>
+                      <span>
+                        {settings.pitchLeft ? "ESQUERDA" : "DIREITA"}{" "}
+                        {settings.controlMode === "antennas"
+                          ? "↔ DISTÂNCIA + DEDOS"
+                          : "↔ NOTAS · ↕ BRILHO"}
+                      </span>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -232,13 +243,10 @@ export function App() {
           {songGuide.active && (
             <div className="song-camera-cue">
               <strong>{songGuide.cue}</strong>
-              {songGuide.next !== null && (
-                <span>Próxima: {noteName(midiFrequency(songGuide.next))}</span>
-              )}
               {songGuide.current !== null && (
                 <span>
                   {songGuide.remaining === null
-                    ? "0% · nota congelada"
+                    ? "Alvo mantido para você tocar"
                     : `Troca em ${songGuide.remaining.toFixed(1)} s`}
                 </span>
               )}
@@ -268,7 +276,7 @@ export function App() {
                 update(s);
                 setCalibrating(false);
                 setNotice(
-                  "Calibração salva. Eleve a mão marcada VOLUME para tocar.",
+                  "Calibração salva. Estique o indicador e eleve a mão para tocar.",
                 );
               }}
               onClose={() => setCalibrating(false)}
@@ -283,7 +291,20 @@ export function App() {
                 key={key}
                 title={preset.description}
                 onClick={() => {
-                  update(applyPreset(settings, key as keyof typeof presets));
+                  const presetSettings = applyPreset(
+                    settings,
+                    key as keyof typeof presets,
+                  );
+                  update(
+                    songGuide.active
+                      ? {
+                          ...presetSettings,
+                          fMin: settings.fMin,
+                          fMax: settings.fMax,
+                          scale: settings.scale,
+                        }
+                      : presetSettings,
+                  );
                   setNotice(preset.description);
                 }}
               >
@@ -292,9 +313,9 @@ export function App() {
             ))}
           </div>
           <div className="note">
-            <span>{running ? noteName(r.frequency) : "—"}</span>
+            <span>{running && r.pitch ? noteName(r.frequency) : "—"}</span>
             <small>
-              {running ? r.frequency.toFixed(1) : "—"} <b>Hz</b>
+              {running && r.pitch ? r.frequency.toFixed(1) : "—"} <b>Hz</b>
             </small>
           </div>
           <div className="tuning" aria-label="Afinação em cents">
@@ -332,11 +353,19 @@ export function App() {
           />
           <div className="tracking">
             <span>
-              <span>Mão de pitch</span>
+              <span>
+                {settings.controlMode === "wand"
+                  ? "Indicador ativo"
+                  : "Mão de pitch"}
+              </span>
               <strong>{r.pitch ? "● Detectada" : "○ Ausente"}</strong>
             </span>
             <span>
-              <span>Mão de volume</span>
+              <span>
+                {settings.controlMode === "wand"
+                  ? "Controle de volume"
+                  : "Mão de volume"}
+              </span>
               <strong>{r.volume ? "● Detectada" : "○ Ausente"}</strong>
             </span>
           </div>
@@ -361,6 +390,7 @@ export function App() {
           <label>
             Afinação
             <select
+              disabled={songGuide.active}
               value={settings.scale}
               onChange={(e) =>
                 update({
@@ -433,18 +463,19 @@ export function App() {
             : running && settings.maxGain === 0
               ? "Ganho máximo está em zero. Ajuste-o em Configurações para ouvir."
               : running && !r.pitch
-                ? "Mostre a mão de pitch para liberar o som. Confira a identificação no vídeo."
+                ? "Estique o indicador de qualquer mão para tocar. Dobrado, ele silencia."
                 : running && !r.volume
                   ? "Mostre a mão de volume e eleve-a para aumentar o som."
                   : running && r.outside
                     ? "Mão fora da área calibrada: valor limitado à borda."
                     : notice ||
                       (running
-                        ? "Eleve a mão marcada VOLUME para aumentar o som."
+                        ? "Mova o indicador na horizontal para afinar e eleve-o para aumentar o volume."
                         : "")}
       </div>
       {config && <SettingsPanel value={settings} onChange={update} />}
       <SongPanel
+        reading={r}
         settings={settings}
         running={running}
         blocked={muted || calibrating}
@@ -465,7 +496,10 @@ export function App() {
           <span>01</span>
           <div>
             <h3>Abra seu espaço</h3>
-            <p>Boa luz, câmera à sua frente e as duas mãos no quadro.</p>
+            <p>
+              Boa luz e uma mão no quadro. Use a esquerda ou a direita com o
+              indicador esticado.
+            </p>
           </div>
         </article>
         <article>
@@ -473,9 +507,11 @@ export function App() {
           <div>
             <h3>Desenhe a melodia</h3>
             <p>
-              {settings.controlMode === "antennas"
-                ? "Aproxime da haste para subir a nota. Abra e feche levemente os dedos para afinar; oscile a mão para criar seu vibrato."
-                : "Siga a régua de notas com a mão de pitch. Suba essa mão para abrir o brilho; pequenos movimentos horizontais criam vibrato."}
+              {settings.controlMode === "wand"
+                ? "Mova somente a ponta do indicador na horizontal para escolher a nota. A barra mostra quanto falta para acertar."
+                : settings.controlMode === "antennas"
+                  ? "Aproxime da haste para subir a nota. Abra e feche levemente os dedos para afinar; oscile a mão para criar seu vibrato."
+                  : "Siga a régua de notas com a mão de pitch. Suba essa mão para abrir o brilho; pequenos movimentos horizontais criam vibrato."}
             </p>
           </div>
         </article>
@@ -484,8 +520,8 @@ export function App() {
           <div>
             <h3>Dê intensidade</h3>
             <p>
-              Use a outra mão para dar intensidade e separar as notas. Baixe
-              para encerrar uma frase; eleve para começar a próxima.
+              Eleve o mesmo indicador para aumentar o volume. Dobre para
+              silenciar e estique novamente para começar outra nota.
             </p>
           </div>
         </article>

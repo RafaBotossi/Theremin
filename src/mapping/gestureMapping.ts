@@ -1,4 +1,5 @@
 import type { Hand, Settings } from "../types/theremin";
+import { selectWand } from "../vision/indexExtension";
 export const clamp = (n: number, min = 0, max = 1) =>
   Math.max(min, Math.min(max, n));
 export function normalized(
@@ -59,6 +60,10 @@ export function noteName(f: number) {
   );
 }
 export function selectHands(hands: Hand[], s: Settings) {
+  if (s.controlMode === "wand") {
+    const hand = selectWand(hands);
+    return { pitch: hand, volume: hand };
+  }
   // score is handedness certainty, NOT confidence that a hand exists.
   // Detection/presence confidence is already enforced by HandLandmarker.
   const valid = hands.filter(

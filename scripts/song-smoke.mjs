@@ -35,7 +35,9 @@ try {
   const left = await page
     .locator(".song-target")
     .evaluate((el) => parseFloat(el.style.left));
-  if (left >= 50) throw Error("Target is on the volume side");
+  if (left < 0 || left > 100) throw Error("Target outside camera");
+  if (await page.locator(".song-next").count())
+    throw Error("Future note must stay hidden");
   const marker = await page.locator(".song-target").boundingBox();
   const guide = await page.locator(".note-guide").boundingBox();
   if (
@@ -93,7 +95,7 @@ try {
   const result = {
     timedHighlight: true,
     pause: true,
-    leftAntenna: true,
+    mappedTarget: true,
     midiImport: true,
     mobile: true,
     errors,

@@ -74,7 +74,11 @@ export function applyPreset(
   key: keyof typeof presets,
 ): Settings {
   // Preserve camera calibration, handedness and the user's volume ceiling.
-  return { ...settings, ...presets[key].values };
+  return {
+    ...settings,
+    ...presets[key].values,
+    controlMode: settings.controlMode,
+  };
 }
 export const harmonics = {
   theremin: [0, 1, 0.34, 0.17, 0.08, 0.035, 0.015],

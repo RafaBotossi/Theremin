@@ -37,7 +37,7 @@ export function useSongPlayback(
     try {
       const engine = new ThereminEngine();
       audio.current = engine;
-      engine.configure({ ...currentSettings.current, vibrato: 0 });
+      engine.configure(currentSettings.current);
       await engine.resume();
       if (token !== generation.current) return false;
       setListening(true);
@@ -54,7 +54,7 @@ export function useSongPlayback(
     }
   };
   useEffect(() => {
-    audio.current?.configure({ ...settings, vibrato: 0 });
+    audio.current?.configure(settings);
   }, [settings]);
   useEffect(() => {
     const engine = audio.current;

@@ -20,6 +20,12 @@ it("corrige configuração antiga e mantém régua na haste ao trocar lados", ()
     JSON.stringify({ pitchLeft: false, assignment: "anatomical" }),
   );
   const view = render(<App />);
+  expect(view.container.querySelector(".volume-antenna")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Configurações" }));
+  expect(screen.getByLabelText("Modo de controle")).toHaveValue("wand");
+  fireEvent.change(screen.getByLabelText("Modo de controle"), {
+    target: { value: "antennas" },
+  });
   const side = (selector: string) =>
     parseFloat(
       (view.container.querySelector(selector) as HTMLElement).style.left,
@@ -28,7 +34,6 @@ it("corrige configuração antiga e mantém régua na haste ao trocar lados", ()
   expect(side(".volume-antenna")).toBeCloseTo(65);
   for (const line of view.container.querySelectorAll<HTMLElement>(".note-line"))
     expect(parseFloat(line.style.left)).toBeLessThan(50);
-  fireEvent.click(screen.getByRole("button", { name: "Configurações" }));
   expect(screen.getByLabelText("Identificação das mãos")).toHaveValue("screen");
   fireEvent.click(
     screen.getByLabelText("Inverter mãos: direita na nota, esquerda no volume"),
@@ -94,6 +99,9 @@ it("exibe erro de permissão e permite nova tentativa", async () => {
 it("expõe configuração manual e persiste somente parâmetros", () => {
   render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "Configurações" }));
+  fireEvent.change(screen.getByLabelText("Modo de controle"), {
+    target: { value: "antennas" },
+  });
   fireEvent.click(
     screen.getByLabelText("Inverter mãos: direita na nota, esquerda no volume"),
   );

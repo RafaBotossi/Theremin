@@ -42,7 +42,7 @@ it("não apresenta afinação falsa quando a mão some ou durante pausas", () =>
       listening={false}
     />,
   );
-  expect(screen.getByText(/Mostre a mão/)).toBeVisible();
+  expect(screen.getByText(/Estique o indicador/)).toBeVisible();
   view.rerender(
     <PitchFeedback
       reading={{ ...emptyReading, pitch: true }}

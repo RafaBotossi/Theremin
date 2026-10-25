@@ -8,10 +8,11 @@ export interface Hand {
   score: number;
   landmarks: Point[];
   openness?: number;
+  indexExtension?: number;
 }
 export interface Settings {
   handLayoutVersion: number;
-  controlMode: "antennas" | "screen";
+  controlMode: "antennas" | "screen" | "wand";
   antennaX: number;
   antennaY: number;
   antennaNear: number;
@@ -41,8 +42,8 @@ export interface Settings {
   delay: number;
 }
 export const defaults: Settings = {
-  handLayoutVersion: 1,
-  controlMode: "antennas",
+  handLayoutVersion: 2,
+  controlMode: "wand",
   antennaX: 0.9,
   antennaY: 0.8,
   antennaNear: 0.045,
@@ -96,8 +97,8 @@ export function sanitize(input: Partial<Settings>): Settings {
   s.reverb = bound(s.reverb, 0, 0.35);
   s.delay = bound(s.delay, 0, 0.3);
   s.brightness = bound(s.brightness, 0, 1);
-  if (!["antennas", "screen"].includes(s.controlMode))
-    s.controlMode = "antennas";
+  if (!["antennas", "screen", "wand"].includes(s.controlMode))
+    s.controlMode = "wand";
   s.antennaX = bound(s.antennaX, 0.55, 0.98);
   s.antennaY = bound(s.antennaY, 0.3, 0.95);
   s.antennaNear = bound(s.antennaNear, 0.005, 0.4);
@@ -136,7 +137,7 @@ export function loadSettings(): Settings {
     if (saved.handLayoutVersion !== defaults.handLayoutVersion) {
       saved.pitchLeft = true;
       saved.assignment = "screen";
-      saved.controlMode = "antennas";
+      saved.controlMode = "wand";
     }
     // Migrate only the old untouched sound. Keep custom sounds and calibration.
     if (

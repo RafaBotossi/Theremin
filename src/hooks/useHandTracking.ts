@@ -17,6 +17,7 @@ import {
   TrackingGate,
 } from "../mapping/gestureMapping";
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
+import { selectWand } from "../vision/indexExtension";
 const connections = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -137,6 +138,7 @@ export function useHandTracking(
         frequency = 440,
         interval = 33;
       let expression = current.current.settings.brightness;
+      let wand: Hand | undefined;
       timer = window.setInterval(() => {
         const now = performance.now();
         if (document.hidden || !gate.fresh(now)) {
@@ -188,7 +190,16 @@ export function useHandTracking(
           hands.current = found;
           frameTime.current = detectedAt;
           interval = inferenceMs > 40 ? 66 : 33;
-          const roles = selectHands(found, s);
+          const previousWand = wand;
+          wand = s.controlMode === "wand" ? selectWand(found, wand) : undefined;
+          const roles =
+            s.controlMode === "wand"
+              ? { pitch: wand, volume: wand }
+              : selectHands(found, s);
+          if (s.controlMode === "wand" && (!wand || !previousWand)) {
+            pitchFilter.reset();
+            volumeFilter.reset();
+          }
           // Freshness begins at completion: a slow inference must not
           // expire a newly detected pair before it can drive the audio.
           const safe = gate.update(detectedAt, !!roles.pitch, !!roles.volume);
@@ -254,8 +265,11 @@ export function useHandTracking(
                 ctx.arc(p.x * c.width, p.y * c.height, 4, 0, Math.PI * 2);
                 ctx.fill();
               }
-              const control = h === roles.pitch ? pitchPoint(h, s) : h.point;
-              if (h === roles.pitch && s.controlMode === "antennas") {
+              const control =
+                s.controlMode === "wand" || h === roles.pitch
+                  ? pitchPoint(h, s)
+                  : h.point;
+              if (h === roles.pitch && s.controlMode !== "screen") {
                 ctx.beginPath();
                 ctx.arc(
                   control.x * c.width,
@@ -268,13 +282,23 @@ export function useHandTracking(
               }
               ctx.font = `bold ${Math.max(16, c.width / 45)}px sans-serif`;
               ctx.textAlign = "center";
+              const label =
+                s.controlMode === "wand"
+                  ? h === wand
+                    ? "VARINHA"
+                    : "ESTIQUE O INDICADOR"
+                  : h === roles.pitch
+                    ? "PITCH"
+                    : h === roles.volume
+                      ? "VOLUME"
+                      : "SEM FUNÇÃO";
+              const margin = ctx.measureText(label).width / 2 + 8;
               ctx.fillText(
-                h === roles.pitch
-                  ? "PITCH"
-                  : h === roles.volume
-                    ? "VOLUME"
-                    : "SEM FUNÇÃO",
-                Math.max(55, Math.min(c.width - 55, control.x * c.width)),
+                label,
+                Math.max(
+                  margin,
+                  Math.min(c.width - margin, control.x * c.width),
+                ),
                 Math.max(25, control.y * c.height - 25),
               );
             }

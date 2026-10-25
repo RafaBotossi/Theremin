@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Settings } from "../types/theremin";
+import { emptyReading, type Reading, type Settings } from "../types/theremin";
 import { noteName } from "../mapping/gestureMapping";
 import { parseMidi } from "../music/midi";
 import {
@@ -13,6 +13,7 @@ import {
 } from "../music/song";
 import { buildEcstasy } from "../music/ecstasyScore";
 import { useSongPlayback } from "../hooks/useSongPlayback";
+import { emptyMatch, matchNote } from "../music/noteMatch";
 
 export function SongPanel({
   settings,
@@ -20,12 +21,14 @@ export function SongPanel({
   running,
   onSettings,
   onGuide,
+  reading = emptyReading,
 }: {
   settings: Settings;
   blocked: boolean;
   running: boolean;
   onSettings: (s: Settings) => void;
   onGuide: (g: SongGuide) => void;
+  reading?: Reading;
 }) {
   const [choice, setChoice] = useState("ecstasy");
   const [tracks, setTracks] = useState<Melody[]>([]);
@@ -45,6 +48,9 @@ export function SongPanel({
   );
   const [time, setTime] = useState(-3);
   const [error, setError] = useState("");
+  const [practice, setPractice] = useState(false);
+  const [noteIndex, setNoteIndex] = useState(0);
+  const match = useRef({ ...emptyMatch });
   const generation = useRef(0),
     wasRunning = useRef(running);
   const melody =
@@ -64,12 +70,18 @@ export function SongPanel({
   const outOfRange = notes.some(
     (n) => midiFrequency(n.midi) < 40 || midiFrequency(n.midi) > 4000,
   );
-  const frame = frameAt(notes, time);
+  const frame = practice
+    ? {
+        current: status === "done" ? null : (notes[noteIndex] ?? null),
+        next: null,
+        remaining: 0,
+      }
+    : frameAt(notes, time);
   const playback = useSongPlayback(
     settings,
     frame.current,
     time,
-    status === "playing",
+    status === "playing" && !practice,
     speed,
     blocked,
   );
@@ -79,14 +91,43 @@ export function SongPanel({
       ? "Guia pausado"
       : status === "done"
         ? "Trecho concluído"
-        : time < 0
-          ? `Prepare as mãos · ${Math.ceil(-time)}`
-          : frame.current
-            ? `Agora ${noteName(midiFrequency(frame.current.midi))}${frame.current.measure ? ` · compasso ${frame.current.measure}` : ""}`
-            : "Pausa · silencie no laço";
+        : practice
+          ? `Toque ${noteName(midiFrequency(notes[noteIndex]?.midi ?? 69))} · ${noteIndex + 1}/${notes.length}`
+          : time < 0
+            ? `Prepare as mãos · ${Math.ceil(-time)}`
+            : frame.current
+              ? `Agora ${noteName(midiFrequency(frame.current.midi))}${frame.current.measure ? ` · compasso ${frame.current.measure}` : ""}`
+              : "Pausa · dobre o indicador";
 
   useEffect(() => {
-    if (status !== "playing" || blocked || speed === 0) return;
+    if (!practice || status !== "playing" || !notes[noteIndex]) {
+      match.current = { ...emptyMatch, release: match.current.release };
+      return;
+    }
+    const next = matchNote(
+      match.current,
+      reading,
+      notes[noteIndex].midi,
+      performance.now(),
+      running && !blocked && !document.hidden,
+    );
+    match.current = next;
+    if (!next.passed) return;
+    const nextIndex = noteIndex + 1;
+    if (nextIndex >= notes.length && !loop) {
+      setStatus("done");
+      return;
+    }
+    const index = nextIndex % notes.length;
+    match.current = {
+      ...emptyMatch,
+      release: notes[index].midi === notes[noteIndex].midi,
+    };
+    setNoteIndex(index);
+  }, [reading, practice, status, noteIndex, notes, running, blocked, loop]);
+
+  useEffect(() => {
+    if (practice || status !== "playing" || blocked || speed === 0) return;
     let last = performance.now();
     const timer = setInterval(() => {
       const now = performance.now(),
@@ -102,10 +143,11 @@ export function SongPanel({
       });
     }, 30);
     return () => clearInterval(timer);
-  }, [status, blocked, speed, duration, loop]);
+  }, [status, blocked, speed, duration, loop, practice]);
   useEffect(() => {
-    if (status === "playing" && time >= duration && !loop) setStatus("done");
-  }, [time, duration, loop, status]);
+    if (!practice && status === "playing" && time >= duration && !loop)
+      setStatus("done");
+  }, [time, duration, loop, status, practice]);
   useEffect(() => {
     if (status === "done") playback.stop();
   }, [status, playback.stop]);
@@ -132,9 +174,13 @@ export function SongPanel({
               time >= 0 && status !== "done"
                 ? (frame.current?.midi ?? null)
                 : null,
-            next: status !== "done" ? (frame.next?.midi ?? null) : null,
+            next: null,
             cue,
-            remaining: speed > 0 ? frame.remaining / speed : null,
+            remaining: practice
+              ? null
+              : speed > 0
+                ? frame.remaining / speed
+                : null,
           }
         : emptyGuide,
     );
@@ -150,6 +196,7 @@ export function SongPanel({
     cue,
     speed,
     playback.listening,
+    practice,
   ]);
   useEffect(
     () => () => {
@@ -161,6 +208,8 @@ export function SongPanel({
     playback.stop();
     setStatus("idle");
     setTime(-3);
+    setNoteIndex(0);
+    match.current = { ...emptyMatch };
   }
   async function importFile(file: File | undefined) {
     if (!file) return;
@@ -183,12 +232,12 @@ export function SongPanel({
         );
     }
   }
-  function start() {
+  function start(byNote = practice) {
     if (!notes.length || polyphonic || outOfRange || blocked) return;
     const frequencies = notes.map((n) => midiFrequency(n.midi));
     onSettings({
       ...settings,
-      controlMode: "antennas",
+      controlMode: settings.controlMode,
       scale: "free",
       vibrato: 0,
       fMin: Math.max(
@@ -197,7 +246,12 @@ export function SongPanel({
       ),
       fMax: Math.min(4000, Math.max(...frequencies) * 2 ** (1 / 12)),
     });
-    if (status !== "paused") setTime(speed === 0 ? 0 : -3);
+    setPractice(byNote);
+    if (status !== "paused" || byNote !== practice) {
+      setTime(byNote || speed === 0 ? 0 : -3);
+      setNoteIndex(0);
+      match.current = { ...emptyMatch };
+    }
     setStatus("playing");
     document
       .querySelector(".camera-stage")
@@ -208,6 +262,21 @@ export function SongPanel({
       <p className="eyebrow">TOQUE UMA MÚSICA</p>
       <h2>Siga a luz, uma nota de cada vez.</h2>
       <div className="song-controls">
+        <label>
+          Avanço da música
+          <select
+            value={practice ? "practice" : "timed"}
+            onChange={(e) => {
+              reset();
+              setPractice(e.target.value === "practice");
+            }}
+          >
+            <option value="timed">Seguir o tempo</option>
+            <option value="practice">
+              No meu ritmo · acertar para avançar
+            </option>
+          </select>
+        </label>
         <label>
           Música
           <select
@@ -252,9 +321,11 @@ export function SongPanel({
             onChange={(e) => setSpeed(Number(e.target.value) / 100)}
           />
           <small>
-            {speed === 0
-              ? "0% · guia congelado e referência em silêncio"
-              : "1% a 100% · ajuste fino"}
+            {practice
+              ? "No seu ritmo: a velocidade só vale ao ouvir ou seguir o tempo."
+              : speed === 0
+                ? "0% · guia congelado e referência em silêncio"
+                : "1% a 100% · ajuste fino"}
           </small>
         </div>
         <label>
@@ -381,12 +452,21 @@ export function SongPanel({
         <button
           disabled={blocked || !notes.length || polyphonic || outOfRange}
           onClick={() => {
+            playback.stop();
+            start(true);
+          }}
+        >
+          Tocar nota por nota
+        </button>
+        <button
+          disabled={blocked || !notes.length || polyphonic || outOfRange}
+          onClick={() => {
             if (playback.listening || playback.loading) {
               playback.stop();
               return;
             }
             void playback.listen().then((ok) => {
-              if (ok) start();
+              if (ok) start(false);
             });
           }}
         >
@@ -398,7 +478,9 @@ export function SongPanel({
         </button>
         <button
           disabled={!notes.length || polyphonic || outOfRange || blocked}
-          onClick={status === "playing" ? () => setStatus("paused") : start}
+          onClick={
+            status === "playing" ? () => setStatus("paused") : () => start()
+          }
         >
           {status === "playing"
             ? "Pausar guia"
@@ -431,20 +513,29 @@ export function SongPanel({
               : blocked
                 ? "Guia pausado durante mute ou calibração."
                 : enabled
-                  ? `${speed === 0 ? "0% · guia congelado · " : ""}${cue}${frame.next ? ` · Próxima: ${noteName(midiFrequency(frame.next.midi))}` : ""}`
+                  ? `${!practice && speed === 0 ? "0% · guia congelado · " : ""}${cue}`
                   : "Inicie o guia: 3 segundos para posicionar as mãos. Você também pode visualizar sem câmera.")}
       </div>
       <progress
         aria-label="Progresso da música"
-        max={duration || 1}
-        value={Math.max(0, time)}
+        max={practice ? notes.length || 1 : duration || 1}
+        value={
+          practice
+            ? status === "done"
+              ? notes.length
+              : noteIndex
+            : Math.max(0, time)
+        }
       />
       <p>
-        Bolinha amarela no topo: toque agora. Bolinha azul: próxima nota. A
-        faixa e a afinação livre são ajustadas ao iniciar; sua calibração é
-        mantida. Use Ouvir música para escutar a melodia sem câmera. Durante a
-        referência, o som das mãos fica silenciado. Em 0%, o guia congela e a
-        referência fica em silêncio.
+        Bolinha amarela no topo: única nota a tocar agora. Em Tocar nota por
+        nota, sustente o alvo por 0,25 s dentro de ±35 cents para avançar no seu
+        ritmo. Para notas repetidas, dobre e estique o indicador. As pausas
+        escritas são livres neste modo; velocidade vale para o guia com tempo e
+        para ouvir. A faixa e a afinação livre são ajustadas ao iniciar; sua
+        calibração é mantida. Use Ouvir música para escutar a melodia sem
+        câmera. Durante a referência, o som das mãos fica silenciado. Em 0%, o
+        guia congela e a referência fica em silêncio.
       </p>
     </section>
   );

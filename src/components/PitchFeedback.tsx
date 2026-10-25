@@ -33,7 +33,7 @@ export function PitchFeedback({
   const text = listening
     ? "Ouvindo a referência automática · suas mãos estão sem som"
     : !present
-      ? "Mostre a mão da nota para ver sua afinação"
+      ? "Estique o indicador para ver sua afinação"
       : goal === null
         ? "Sem nota-alvo agora · aguarde a próxima bolinha"
         : correction !== null && Math.abs(correction) <= 5

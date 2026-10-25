@@ -26,7 +26,14 @@ it("toca a nota do guia e silencia em 0%, pausa, e encerra no bloqueio", async (
   const note = { midi: 69, start: 0, duration: 1 };
   const { result, rerender } = renderHook(
     ({ speed, playing, blocked }) =>
-      useSongPlayback(defaults, note, 0.5, playing, speed, blocked),
+      useSongPlayback(
+        { ...defaults, vibrato: 5, brightness: 0.3 },
+        note,
+        0.5,
+        playing,
+        speed,
+        blocked,
+      ),
     { initialProps: { speed: 1, playing: true, blocked: false } },
   );
   expect(calls.resume).not.toHaveBeenCalled();
@@ -34,6 +41,11 @@ it("toca a nota do guia e silencia em 0%, pausa, e encerra no bloqueio", async (
     await result.current.listen();
   });
   expect(calls.update.mock.lastCall?.[0]).toBe(440);
+  expect(calls.configure.mock.lastCall?.[0]).toMatchObject({
+    vibrato: 5,
+    brightness: 0.3,
+    waveform: defaults.waveform,
+  });
   expect(calls.update.mock.lastCall?.[1]).toBeGreaterThan(0);
   rerender({ speed: 0, playing: true, blocked: false });
   expect(calls.silence).toHaveBeenCalled();

@@ -14,7 +14,11 @@ import {
 import { frequencyAt } from "../src/mapping/gestureMapping";
 import { fingerOpenness } from "../src/vision/fingerOpenness";
 import { initialPractice, practiceStep } from "../src/mapping/practice";
-const defaults = { ...baseDefaults, pitchLeft: false };
+const defaults = {
+  ...baseDefaults,
+  controlMode: "antennas" as const,
+  pitchLeft: false,
+};
 const hand = (x: number, y = 0.5, openness = 0.5): Hand => ({
   point: { x, y },
   openness,
@@ -90,7 +94,7 @@ it("migração mantém a pentatônica escolhida", () => {
     JSON.stringify({ scale: "pentatonic", vibrato: 8 }),
   );
   expect(loadSettings()).toMatchObject({
-    controlMode: "antennas",
+    controlMode: "wand",
     scale: "pentatonic",
     vibrato: 0,
   });

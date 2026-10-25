@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Hand, Settings } from "../types/theremin";
 import { selectHands } from "../mapping/gestureMapping";
-import { pitchDistance } from "../mapping/antennaMapping";
+import { pitchDistance, pitchPoint } from "../mapping/antennaMapping";
 
 export function CalibrationWizard({
   hands,
@@ -16,11 +16,13 @@ export function CalibrationWizard({
   onSave: (s: Settings) => void;
   onClose: () => void;
 }) {
+  const presence =
+    settings.controlMode === "wand"
+      ? "Mostre uma mão com o indicador esticado. O avanço é automático."
+      : "Mostre as duas mãos. O avanço é automático.";
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState(
-    "Mostre as duas mãos. O avanço é automático.",
-  );
+  const [message, setMessage] = useState(presence);
   const draft = useRef({ ...settings });
   const save = useRef(onSave);
   save.current = onSave;
@@ -36,9 +38,7 @@ export function CalibrationWizard({
     const duration = step === 0 ? 2000 : 6000;
     setProgress(0);
     setMessage(
-      step === 0
-        ? "Mostre as duas mãos. O avanço é automático."
-        : "Prepare o movimento. Começando em 3 s…",
+      step === 0 ? presence : "Prepare o movimento. Começando em 3 s…",
     );
     const id = window.setInterval(() => {
       if (finished) return;
@@ -67,8 +67,8 @@ export function CalibrationWizard({
         }
         setMessage(
           step === 0
-            ? "Mostre as duas mãos. O avanço é automático."
-            : "Mão fora do quadro. Contagem pausada; mostre-a para continuar.",
+            ? presence
+            : "Contagem pausada. Mostre a mão e mantenha o indicador esticado.",
         );
         return;
       }
@@ -80,19 +80,21 @@ export function CalibrationWizard({
           step === 1
             ? settings.controlMode === "antennas"
               ? pitchDistance(roles.pitch!, settings)
-              : roles.pitch!.point.x
-            : roles.volume!.point.y;
+              : pitchPoint(roles.pitch!, settings).x
+            : settings.controlMode === "wand"
+              ? pitchPoint(roles.volume!, settings).y
+              : roles.volume!.point.y;
         min = Math.min(min, value);
         max = Math.max(max, value);
       }
       setProgress(Math.min(1, captured / duration));
       setMessage(
-        `${step === 0 ? "Mantenha as duas mãos visíveis" : "Continue o movimento"} · ${Math.ceil(Math.max(0, duration - captured) / 1000)} s`,
+        `${step === 0 ? (settings.controlMode === "wand" ? "Mantenha o indicador esticado" : "Mantenha as duas mãos visíveis") : "Continue o movimento"} · ${Math.ceil(Math.max(0, duration - captured) / 1000)} s`,
       );
       if (captured < duration) return;
       if (
         step > 0 &&
-        max - min < (settings.controlMode === "antennas" ? 0.04 : 0.15)
+        max - min < (settings.controlMode === "screen" ? 0.15 : 0.05)
       ) {
         captured = 0;
         min = 1;
@@ -125,7 +127,7 @@ export function CalibrationWizard({
       } else setStep(step + 1);
     }, 100);
     return () => clearInterval(id);
-  }, [step, hands, frameTime, settings]);
+  }, [step, hands, frameTime, settings, presence]);
 
   return (
     <section className="calibration" aria-label="Calibração guiada">
@@ -136,19 +138,27 @@ export function CalibrationWizard({
       <h2>
         {
           [
-            "Mostre as duas mãos",
-            "Mova a mão de pitch ↔",
-            "Mova a mão de volume ↕",
+            settings.controlMode === "wand"
+              ? "Estique o indicador de uma mão"
+              : "Mostre as duas mãos",
+            settings.controlMode === "wand"
+              ? "Mova o indicador ↔ para calibrar notas"
+              : "Mova a mão de pitch ↔",
+            settings.controlMode === "wand"
+              ? "Mova o indicador ↕ para calibrar volume"
+              : "Mova a mão de volume ↕",
           ][step]
         }
       </h2>
       <p className="calibration-instruction">
         {
           [
-            "Mantenha as palmas no quadro por 2 segundos. O som fica pausado até terminar.",
+            settings.controlMode === "wand"
+              ? "Use qualquer mão, com o indicador esticado por 2 segundos. O som fica pausado até terminar."
+              : "Mantenha as palmas no quadro por 2 segundos. O som fica pausado até terminar.",
             settings.controlMode === "antennas"
               ? "Aproxime e afaste as pontas dos dedos da haste por 6 s, no pequeno alcance que quer usar. O dedo marcado controla a nota."
-              : "Percorra toda a largura confortável durante 6 segundos. Siga a mão marcada PITCH.",
+              : "Percorra a largura confortável por 6 segundos com o indicador esticado. A ponta marcada controla a nota.",
             settings.controlMode === "antennas"
               ? "Por 6 s, baixe a mão até onde quer silêncio e eleve até seu máximo confortável. O laço será ajustado."
               : "Percorra toda a altura confortável durante 6 segundos. Ao terminar, salvamos e liberamos o som.",

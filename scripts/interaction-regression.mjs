@@ -23,7 +23,7 @@ try {
       JSON.stringify({
         controlMode: "screen",
         pitchLeft: false,
-        handLayoutVersion: 1,
+        handLayoutVersion: 2,
       }),
     );
     window.testHands = [

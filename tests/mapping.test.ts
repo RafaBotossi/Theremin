@@ -13,7 +13,11 @@ import {
   sanitize,
   type Hand,
 } from "../src/types/theremin";
-const defaults = { ...baseDefaults, pitchLeft: false };
+const defaults = {
+  ...baseDefaults,
+  controlMode: "antennas" as const,
+  pitchLeft: false,
+};
 
 it("padrão usa esquerda na nota, direita no volume e permite inverter", () => {
   const left: Hand = {
@@ -29,12 +33,17 @@ it("padrão usa esquerda na nota, direita no volume e permite inverter", () => {
     landmarks: [],
   };
   for (const assignment of ["screen", "anatomical"] as const) {
-    expect(selectHands([left, right], { ...baseDefaults, assignment })).toEqual(
-      { pitch: left, volume: right },
-    );
     expect(
       selectHands([left, right], {
         ...baseDefaults,
+        controlMode: "antennas",
+        assignment,
+      }),
+    ).toEqual({ pitch: left, volume: right });
+    expect(
+      selectHands([left, right], {
+        ...baseDefaults,
+        controlMode: "antennas",
         assignment,
         pitchLeft: false,
       }),

@@ -16,11 +16,39 @@ const hand = (x: number, y: number): Hand => ({
   landmarks: [],
 });
 beforeEach(() => vi.useFakeTimers());
+it("calibra ambas as funções com um único indicador e pausa se dobrado", () => {
+  const s = setup("wand");
+  const h = hand(0.9, 0.9);
+  h.landmarks = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.5 }));
+  h.indexExtension = 1;
+  s.hands.current = [h];
+  s.frames(2000);
+  s.frames(3000);
+  h.indexExtension = 0;
+  s.frames(7000);
+  expect(s.onSave).not.toHaveBeenCalled();
+  h.indexExtension = 1;
+  s.frames(6000, (i) => {
+    h.landmarks[8] = { x: i % 2 ? 0.7 : 0.3, y: 0.5 };
+  });
+  s.frames(3000);
+  s.frames(6000, (i) => {
+    h.landmarks[8].y = i % 2 ? 0.8 : 0.2;
+  });
+  expect(s.onSave).toHaveBeenCalledOnce();
+  expect(s.onSave.mock.calls[0][0]).toMatchObject({
+    controlMode: "wand",
+    pitchMin: 0.3,
+    pitchMax: 0.7,
+    volumeMin: 0.2,
+    volumeMax: 0.8,
+  });
+});
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
 });
-function setup(controlMode: "screen" | "antennas" = "screen") {
+function setup(controlMode: "screen" | "antennas" | "wand" = "screen") {
   const hands = { current: [hand(0.25, 0.5), hand(0.75, 0.5)] };
   const frameTime = { current: performance.now() };
   const onSave = vi.fn(),

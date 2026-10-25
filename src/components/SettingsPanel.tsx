@@ -50,6 +50,7 @@ export function SettingsPanel({
               })
             }
           >
+            <option value="wand">Varinha · indicador de qualquer mão</option>
             <option value="antennas">Antenas fixas · treino</option>
             <option value="screen">Eixos da tela · modo anterior</option>
           </select>
@@ -93,41 +94,47 @@ export function SettingsPanel({
             )}
           </>
         )}
-        <label>
-          Identificação das mãos
-          <select
-            value={s.assignment}
-            onChange={(e) =>
-              onChange({
-                ...s,
-                assignment: e.target.value as Settings["assignment"],
-              })
-            }
-          >
-            <option value="anatomical">Automática (anatômica)</option>
-            <option value="screen">Pelo lado da imagem (recomendado)</option>
-          </select>
-        </label>
-        <label>
-          {s.controlMode === "antennas"
-            ? "Ponto da mão de volume"
-            : "Ponto de controle"}
-          <select
-            value={s.landmark}
-            onChange={(e) =>
-              onChange({
-                ...s,
-                landmark: e.target.value as Settings["landmark"],
-              })
-            }
-          >
-            <option value="palm">Centro da palma</option>
-            <option value="index">Ponta do indicador (experimental)</option>
-          </select>
-        </label>
+        {s.controlMode !== "wand" && (
+          <>
+            <label>
+              Identificação das mãos
+              <select
+                value={s.assignment}
+                onChange={(e) =>
+                  onChange({
+                    ...s,
+                    assignment: e.target.value as Settings["assignment"],
+                  })
+                }
+              >
+                <option value="anatomical">Automática (anatômica)</option>
+                <option value="screen">
+                  Pelo lado da imagem (recomendado)
+                </option>
+              </select>
+            </label>
+            <label>
+              {s.controlMode === "antennas"
+                ? "Ponto da mão de volume"
+                : "Ponto de controle"}
+              <select
+                value={s.landmark}
+                onChange={(e) =>
+                  onChange({
+                    ...s,
+                    landmark: e.target.value as Settings["landmark"],
+                  })
+                }
+              >
+                <option value="palm">Centro da palma</option>
+                <option value="index">Ponta do indicador (experimental)</option>
+              </select>
+            </label>
+          </>
+        )}
         {number("fMin", "Frequência mínima (Hz)", 40, 1800, 10)}
         {number("fMax", "Frequência máxima (Hz)", 50, 4000, 10)}
-        {s.controlMode === "screen" && (
+        {s.controlMode !== "antennas" && (
           <>
             {number("pitchMin", "Pitch: limite esquerdo (0–1)", 0, 0.9, 0.01)}
             {number("pitchMax", "Pitch: limite direito (0–1)", 0.05, 1, 0.01)}
@@ -152,20 +159,23 @@ export function SettingsPanel({
         {number("delay", "Delay", 0, 0.3, 0.01)}
         {toggle("invertPitch", "Inverter eixo de pitch")}
         {toggle("invertVolume", "Inverter eixo de volume")}
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={!s.pitchLeft}
-            onChange={(e) => onChange({ ...s, pitchLeft: !e.target.checked })}
-          />
-          Inverter mãos: direita na nota, esquerda no volume
-        </label>
+        {s.controlMode !== "wand" && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={!s.pitchLeft}
+              onChange={(e) => onChange({ ...s, pitchLeft: !e.target.checked })}
+            />
+            Inverter mãos: direita na nota, esquerda no volume
+          </label>
+        )}
       </div>
       <p>
-        {s.pitchLeft
-          ? "Mão esquerda: nota. Mão direita: volume."
-          : "Mão direita: nota. Mão esquerda: volume."}{" "}
-        No modo manual, mantenha cada mão na sua metade da imagem espelhada.
+        {s.controlMode === "wand"
+          ? "Uma mão basta: indicador esticado toca, dobrado silencia. Horizontal controla a nota; altura controla o volume. Se as duas estiverem esticadas, mantemos a mão ativa."
+          : s.pitchLeft
+            ? "Mão esquerda: nota. Mão direita: volume."
+            : "Mão direita: nota. Mão esquerda: volume."}{" "}
       </p>
       <button onClick={() => onChange({ ...defaults })}>
         Restaurar padrões
