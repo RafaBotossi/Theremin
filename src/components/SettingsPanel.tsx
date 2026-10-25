@@ -151,11 +151,15 @@ export function SettingsPanel({
         {number("sensitivity", "Sensibilidade", 0.5, 2, 0.1)}
         {number("smoothing", "Suavização (segundos)", 0.01, 0.2, 0.005)}
         {number("maxGain", "Ganho máximo (até 0,25)", 0, 0.25, 0.01)}
-        {number("vibrato", "Vibrato (cents)", 0, 30, 1)}
+        {number("vibrato", "Vibrato acionável (cents)", 0, 50, 1)}
+        {number("vibratoRate", "Vibrato (Hz)", 5, 6, 0.1)}
+        {toggle("gestureVibrato", "Acionar vibrato ao abrir o polegar")}
+        {number("vocalResonance", "Ressonância vocal", 0, 1, 0.05)}
+        {number("glide", "Glissando (segundos)", 0.003, 0.15, 0.001)}
         {number("brightness", "Brilho do timbre (0–1)", 0, 1, 0.05)}
         {s.controlMode === "screen" &&
           toggle("gestureTone", "Altura da mão de pitch controla o brilho")}
-        {number("reverb", "Reverb", 0, 0.35, 0.01)}
+        {number("reverb", "Reverb estéreo (wet/dry)", 0, 0.6, 0.01)}
         {number("delay", "Delay", 0, 0.3, 0.01)}
         {toggle("invertPitch", "Inverter eixo de pitch")}
         {toggle("invertVolume", "Inverter eixo de volume")}

@@ -9,6 +9,7 @@ export interface Hand {
   landmarks: Point[];
   openness?: number;
   indexExtension?: number;
+  vibratoExpression?: number;
 }
 export interface Settings {
   handLayoutVersion: number;
@@ -38,6 +39,15 @@ export interface Settings {
   gestureTone: boolean;
   maxGain: number;
   vibrato: number;
+  vibratoRate: number;
+  gestureVibrato: boolean;
+  glide: number;
+  vocalResonance: number;
+  harmonic1: number;
+  harmonic2: number;
+  harmonic3: number;
+  harmonic4: number;
+  harmonic5: number;
   reverb: number;
   delay: number;
 }
@@ -68,7 +78,16 @@ export const defaults: Settings = {
   brightness: 0.45,
   gestureTone: false,
   maxGain: 0.18,
-  vibrato: 0,
+  vibrato: 12,
+  vibratoRate: 5.5,
+  gestureVibrato: false,
+  glide: 0.012,
+  vocalResonance: 0.4,
+  harmonic1: 1,
+  harmonic2: 0.28,
+  harmonic3: 0.12,
+  harmonic4: 0.05,
+  harmonic5: 0.02,
   reverb: 0.16,
   delay: 0,
 };
@@ -93,8 +112,19 @@ export function sanitize(input: Partial<Settings>): Settings {
   s.maxGain = bound(s.maxGain, 0, 0.25);
   s.smoothing = bound(s.smoothing, 0.01, 0.2);
   s.sensitivity = bound(s.sensitivity, 0.5, 2);
-  s.vibrato = bound(s.vibrato, 0, 30);
-  s.reverb = bound(s.reverb, 0, 0.35);
+  s.vibrato = bound(s.vibrato, 0, 50);
+  s.vibratoRate = bound(s.vibratoRate, 5, 6);
+  s.glide = bound(s.glide, 0.003, 0.15);
+  s.vocalResonance = bound(s.vocalResonance, 0, 1);
+  for (const key of [
+    "harmonic1",
+    "harmonic2",
+    "harmonic3",
+    "harmonic4",
+    "harmonic5",
+  ] as const)
+    s[key] = bound(s[key], 0, 1);
+  s.reverb = bound(s.reverb, 0, 0.6);
   s.delay = bound(s.delay, 0, 0.3);
   s.brightness = bound(s.brightness, 0, 1);
   if (!["antennas", "screen", "wand"].includes(s.controlMode))

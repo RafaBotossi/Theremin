@@ -2,6 +2,7 @@ import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import type { Hand, Settings } from "../types/theremin";
 import { fingerOpenness } from "./fingerOpenness";
 import { indexExtension } from "./indexExtension";
+import { thumbVibrato } from "./thumbVibrato";
 export class HandTracker {
   private model: HandLandmarker;
   readonly delegate: string;
@@ -53,6 +54,7 @@ export class HandTracker {
         landmarks: points.map((p) => ({ x: 1 - p.x, y: p.y })),
         openness: fingerOpenness(result.worldLandmarks?.[i] ?? points),
         indexExtension: indexExtension(result.worldLandmarks?.[i] ?? points),
+        vibratoExpression: thumbVibrato(result.worldLandmarks?.[i] ?? points),
       };
     });
   }

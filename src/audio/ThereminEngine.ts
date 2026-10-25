@@ -1,112 +1,198 @@
 import { clamp } from "../mapping/gestureMapping";
-import type { Settings } from "../types/theremin";
-import { harmonics } from "./presets";
+import { defaults, sanitize, type Settings } from "../types/theremin";
+import { hallImpulse } from "./reverb";
 export class ThereminEngine {
   readonly context: AudioContext;
-  private oscillator: OscillatorNode;
-  private gain: GainNode;
-  private master: GainNode;
-  private filter: BiquadFilterNode;
-  private lfo: OscillatorNode;
-  private depth: GainNode;
+  readonly destination: MediaStreamAudioDestinationNode;
+  private voice: AudioWorkletNode | null = null;
+  private nodes: AudioNode[] = [];
+  private lowpass: BiquadFilterNode;
+  private vowel: BiquadFilterNode;
+  private dry: GainNode;
   private wet: GainNode;
   private echo: GainNode;
-  private brightness = 0.45;
-  private waveform: Settings["waveform"] = "sine";
-  private waves: Partial<Record<"theremin" | "strings", PeriodicWave>> = {};
-  readonly destination: MediaStreamAudioDestinationNode;
+  private master: GainNode;
+  private settings = { ...defaults };
+  private loading: Promise<void> | null = null;
+  private closing: Promise<void> | null = null;
+  private failed = false;
   constructor() {
-    if (typeof AudioContext === "undefined") {
-      throw new Error("Navegador incompatível: Web Audio não está disponível.");
-    }
-    this.context = new AudioContext({ latencyHint: "interactive" });
-    const c = this.context;
-    this.oscillator = c.createOscillator();
-    this.gain = c.createGain();
-    this.gain.gain.value = 0;
+    if (typeof AudioContext === "undefined")
+      throw Error("Web Audio indisponível neste navegador.");
+    const c = (this.context = new AudioContext({ latencyHint: "interactive" }));
+    this.destination = c.createMediaStreamDestination();
+    this.lowpass = c.createBiquadFilter();
+    this.lowpass.type = "lowpass";
+    this.lowpass.Q.value = 0.5;
+    this.vowel = c.createBiquadFilter();
+    this.vowel.type = "peaking";
+    this.vowel.frequency.value = 900;
+    this.vowel.Q.value = 0.65;
+    this.dry = c.createGain();
+    this.wet = c.createGain();
+    this.echo = c.createGain();
     this.master = c.createGain();
     this.master.gain.value = 0;
-    this.filter = c.createBiquadFilter();
-    this.filter.type = "lowpass";
-    this.filter.frequency.value = 3500;
-    const compressor = c.createDynamicsCompressor();
-    compressor.threshold.value = -12;
-    compressor.ratio.value = 12;
-    this.oscillator.connect(this.filter).connect(this.gain);
-    this.gain.connect(this.master);
     const reverb = c.createConvolver();
-    const impulse = c.createBuffer(2, c.sampleRate * 0.65, c.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const a = impulse.getChannelData(ch);
-      for (let i = 0; i < a.length; i++)
-        a[i] = (Math.random() * 2 - 1) * (1 - i / a.length) ** 3;
-    }
-    reverb.buffer = impulse;
-    this.wet = c.createGain();
-    this.wet.gain.value = 0;
-    this.gain.connect(reverb).connect(this.wet).connect(this.master);
+    reverb.buffer = hallImpulse(c);
     const delay = c.createDelay(0.5);
     delay.delayTime.value = 0.18;
-    this.echo = c.createGain();
-    this.echo.gain.value = 0;
-    this.gain.connect(delay).connect(this.echo).connect(this.master);
-    this.master.connect(compressor).connect(c.destination);
-    this.destination = c.createMediaStreamDestination();
-    compressor.connect(this.destination);
-    this.lfo = c.createOscillator();
-    this.lfo.frequency.value = 5;
-    this.depth = c.createGain();
-    this.depth.gain.value = 0;
-    this.lfo.connect(this.depth).connect(this.oscillator.detune);
-    this.oscillator.start();
-    this.lfo.start();
+    const compressor = c.createDynamicsCompressor();
+    compressor.threshold.value = -16;
+    compressor.knee.value = 12;
+    compressor.ratio.value = 1.5;
+    compressor.attack.value = 0.025;
+    compressor.release.value = 0.18;
+    this.lowpass.connect(this.vowel);
+    this.vowel.connect(this.dry).connect(compressor);
+    this.vowel.connect(reverb).connect(this.wet).connect(compressor);
+    this.vowel.connect(delay).connect(this.echo).connect(compressor);
+    this.nodes = [
+      this.lowpass,
+      this.vowel,
+      this.dry,
+      this.wet,
+      this.echo,
+      this.master,
+      reverb,
+      delay,
+      compressor,
+      this.destination,
+    ];
+    this.loading = this.initialize(compressor);
+    void this.loading.catch(() => {
+      this.failed = true;
+    });
+  }
+  private async initialize(compressor: DynamicsCompressorNode) {
+    if (!this.context.audioWorklet)
+      throw Error(
+        "AudioWorklet indisponível. Use HTTPS e um navegador atualizado.",
+      );
+    await this.context.audioWorklet.addModule(
+      import.meta.env.BASE_URL + "audio/theremin-processor.js",
+    );
+    if (this.closing) return;
+    const voice = new AudioWorkletNode(this.context, "theremin-voice", {
+      numberOfInputs: 0,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+    });
+    const limiter = new AudioWorkletNode(this.context, "theremin-limiter", {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [2],
+      channelCount: 2,
+      channelCountMode: "explicit",
+    });
+    const failure = () => {
+      this.failed = true;
+      this.master.gain.setTargetAtTime(0, this.context.currentTime, 0.01);
+    };
+    voice.onprocessorerror = failure;
+    limiter.onprocessorerror = failure;
+    this.voice = voice;
+    voice.connect(this.lowpass);
+    compressor.connect(limiter).connect(this.master);
+    this.master.connect(this.context.destination);
+    this.master.connect(this.destination);
+    this.nodes.push(voice, limiter);
+    this.configure(this.settings);
+    this.master.gain.setTargetAtTime(1, this.context.currentTime, 0.02);
   }
   async resume() {
     await this.context.resume();
-    if (this.context.state !== "running")
-      throw new Error("Áudio bloqueado. Clique em Parar e inicie novamente.");
+    await this.loading;
+    if (this.closing || this.failed || this.context.state !== "running")
+      throw Error("Áudio bloqueado. Ative novamente pelo botão.");
   }
-  configure(s: Settings) {
-    const t = this.context.currentTime;
-    this.brightness = s.brightness;
-    if (s.waveform !== this.waveform) {
-      if (s.waveform === "theremin" || s.waveform === "strings") {
-        const imaginary = new Float32Array(harmonics[s.waveform]);
-        this.waves[s.waveform] ??= this.context.createPeriodicWave(
-          new Float32Array(imaginary.length),
-          imaginary,
-        );
-        this.oscillator.setPeriodicWave(this.waves[s.waveform]!);
-      } else this.oscillator.type = s.waveform;
-      this.waveform = s.waveform;
+  get healthy() {
+    return !this.failed && !this.closing && this.context.state === "running";
+  }
+  private parameter(name: string, value: number) {
+    const p = this.voice?.parameters.get(name);
+    if (p) {
+      p.cancelScheduledValues(this.context.currentTime);
+      p.setValueAtTime(value, this.context.currentTime);
     }
-    this.depth.gain.setTargetAtTime(s.vibrato, t, 0.03);
-    this.wet.gain.setTargetAtTime(s.reverb, t, 0.03);
-    this.echo.gain.setTargetAtTime(s.delay, t, 0.03);
   }
-  update(f: number, g: number, safeForMs = 150, expression = this.brightness) {
-    const t = this.context.currentTime;
-    const color = clamp(expression);
-    // Keep the fundamental while opening harmonics as the pitch hand rises.
-    this.filter.frequency.setTargetAtTime(
-      clamp(f * (1.5 + color * 6), 250, 10000),
-      t,
-      0.06,
+  configure(input: Settings) {
+    if (this.closing) return;
+    const s = (this.settings = sanitize(input)),
+      t = this.context.currentTime;
+    const coefficients =
+      s.waveform === "sine"
+        ? [1, 0, 0, 0, 0]
+        : s.waveform === "strings"
+          ? [1, 0.38, 0.18, 0.08, 0.04]
+          : s.waveform === "triangle"
+            ? [1, 0, 0.111, 0, 0.04]
+            : s.waveform === "sawtooth"
+              ? [1, 0.5, 0.333, 0.25, 0.2]
+              : [
+                  s.harmonic1,
+                  s.harmonic2,
+                  s.harmonic3,
+                  s.harmonic4,
+                  s.harmonic5,
+                ];
+    coefficients.forEach((h, i) => this.parameter("h" + (i + 1), h));
+    this.parameter("glide", s.glide);
+    this.parameter("vibratoRate", s.vibratoRate);
+    this.parameter("vibratoDepth", s.vibrato);
+    this.vowel.gain.setTargetAtTime(s.vocalResonance * 3, t, 0.04);
+    this.dry.gain.setTargetAtTime(Math.cos((s.reverb * Math.PI) / 2), t, 0.04);
+    this.wet.gain.setTargetAtTime(Math.sin((s.reverb * Math.PI) / 2), t, 0.04);
+    this.echo.gain.setTargetAtTime(s.delay, t, 0.04);
+  }
+  update(
+    f: number,
+    g: number,
+    safeForMs = 150,
+    expression = this.settings.brightness,
+    vibratoExpression = 0,
+  ) {
+    if (!this.voice || this.closing || this.failed) return;
+    const frequency = clamp(Number.isFinite(f) ? f : 440, 40, 4000),
+      gain = clamp(Number.isFinite(g) ? g : 0, 0, 0.25),
+      t = this.context.currentTime;
+    this.parameter("logFrequency", Math.log(frequency));
+    this.parameter(
+      "vibratoExpression",
+      clamp(Number.isFinite(vibratoExpression) ? vibratoExpression : 0),
     );
-    this.oscillator.frequency.setTargetAtTime(clamp(f, 40, 4000), t, 0.018);
-    this.gain.gain.setTargetAtTime(clamp(g, 0, 0.25), t, 0.035);
-    this.master.gain.cancelAndHoldAtTime(t);
-    this.master.gain.setTargetAtTime(g > 0 ? 1 : 0, t, g > 0 ? 0.05 : 0.008);
-    if (g > 0) this.master.gain.setTargetAtTime(0, t + safeForMs / 1000, 0.008);
+    const volume = this.voice.parameters.get("gain")!;
+    volume.cancelScheduledValues(t);
+    volume.setValueAtTime(gain, t);
+    // The audio clock owns this deadline, even if the main thread stops.
+    volume.setValueAtTime(
+      0,
+      t + clamp(Number.isFinite(safeForMs) ? safeForMs : 150, 0, 2000) / 1000,
+    );
+    const color = clamp(
+      Number.isFinite(expression) ? expression : this.settings.brightness,
+    );
+    this.lowpass.frequency.setTargetAtTime(
+      clamp(frequency * (3 + color * 9), 500, 16000),
+      t,
+      0.025,
+    );
   }
   silence() {
-    this.update(440, 0);
+    if (this.voice && !this.closing) {
+      this.parameter("gain", 0);
+      this.parameter("vibratoExpression", 0);
+    }
   }
-  async close() {
+  close(): Promise<void> {
+    if (this.closing) return this.closing;
     this.silence();
-    await new Promise((r) => setTimeout(r, 50));
-    this.oscillator.stop();
-    this.lfo.stop();
-    await this.context.close();
+    this.master.gain.setTargetAtTime(0, this.context.currentTime, 0.012);
+    this.closing = (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      this.nodes.forEach((n) => n.disconnect());
+      if (this.context.state !== "closed") await this.context.close();
+    })();
+    return this.closing;
   }
 }

@@ -2,57 +2,63 @@ import { afterEach, expect, it, vi } from "vitest";
 import { ThereminEngine } from "../src/audio/ThereminEngine";
 import { defaults } from "../src/types/theremin";
 const param = () => ({
-  value: 1,
+  value: 0,
+  setValueAtTime: vi.fn(),
   setTargetAtTime: vi.fn(),
-  cancelAndHoldAtTime: vi.fn(),
+  cancelScheduledValues: vi.fn(),
 });
-function context() {
-  const gains: { gain: ReturnType<typeof param> }[] = [];
-  const oscillators: {
-    frequency: ReturnType<typeof param>;
-    stop: ReturnType<typeof vi.fn>;
-  }[] = [];
+function mockContext() {
   const node = () => ({
     connect: vi.fn(function (this: unknown) {
       return this;
     }),
+    disconnect: vi.fn(),
   });
   const c = {
     currentTime: 10,
-    sampleRate: 100,
+    sampleRate: 48000,
     state: "running",
     destination: node(),
     resume: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
-    createGain: () => {
-      const n = { ...node(), gain: param() };
-      gains.push(n);
-      return n;
-    },
-    createOscillator: () => {
-      const n = {
-        ...node(),
-        frequency: param(),
-        detune: param(),
-        start: vi.fn(),
-        stop: vi.fn(),
-        setPeriodicWave: vi.fn(),
-      };
-      oscillators.push(n);
-      return n;
-    },
-    createBiquadFilter: () => ({ ...node(), frequency: param() }),
-    createPeriodicWave: vi.fn().mockReturnValue({}),
+    audioWorklet: { addModule: vi.fn().mockResolvedValue(undefined) },
+    createGain: () => ({ ...node(), gain: param() }),
+    createBiquadFilter: () => ({
+      ...node(),
+      frequency: param(),
+      Q: param(),
+      gain: param(),
+    }),
+    createConvolver: () => node(),
+    createBuffer: (_channels: number, length: number) => ({
+      getChannelData: () => new Float32Array(length),
+    }),
+    createDelay: () => ({ ...node(), delayTime: param() }),
     createDynamicsCompressor: () => ({
       ...node(),
       threshold: param(),
+      knee: param(),
       ratio: param(),
+      attack: param(),
+      release: param(),
     }),
-    createConvolver: () => node(),
-    createBuffer: () => ({ getChannelData: () => new Float32Array(10) }),
-    createDelay: () => ({ ...node(), delayTime: param() }),
     createMediaStreamDestination: () => node(),
   };
+  const params = new Map(
+    [
+      "logFrequency",
+      "gain",
+      "glide",
+      "vibratoRate",
+      "vibratoDepth",
+      "vibratoExpression",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+    ].map((k) => [k, param()]),
+  );
   vi.stubGlobal(
     "AudioContext",
     class {
@@ -61,59 +67,76 @@ function context() {
       }
     },
   );
-  return { c, gains, oscillators };
+  const worklet = vi.fn(function () {
+    return { ...node(), parameters: params };
+  });
+  vi.stubGlobal("AudioWorkletNode", worklet);
+  return { c, params, worklet };
 }
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
-it("começa silencioso, limita ganho e agenda fade independente de frames", () => {
-  const { gains, oscillators } = context();
+it("creates one continuous voice and limiter, clamps targets and schedules safety in audio time", async () => {
+  const { c, params, worklet } = mockContext();
   const engine = new ThereminEngine();
-  expect(gains[0].gain.value).toBe(0);
-  expect(gains[1].gain.value).toBe(0);
-  engine.update(9000, 1, 75);
-  expect(oscillators[0].frequency.setTargetAtTime).toHaveBeenCalledWith(
-    4000,
-    10,
-    0.018,
+  await engine.resume();
+  expect(worklet).toHaveBeenCalledTimes(2);
+  expect(c.audioWorklet.addModule).toHaveBeenCalledWith(
+    "/audio/theremin-processor.js",
   );
-  expect(gains[0].gain.setTargetAtTime).toHaveBeenCalledWith(0.25, 10, 0.035);
-  expect(gains[1].gain.setTargetAtTime).toHaveBeenLastCalledWith(
+  engine.update(9000, 1, 75);
+  expect(params.get("logFrequency")!.setValueAtTime).toHaveBeenLastCalledWith(
+    Math.log(4000),
+    10,
+  );
+  expect(params.get("gain")!.setValueAtTime).toHaveBeenCalledWith(0.25, 10);
+  expect(params.get("gain")!.setValueAtTime).toHaveBeenLastCalledWith(
     0,
     10.075,
-    0.008,
   );
+  expect(
+    params.get("vibratoExpression")!.setValueAtTime,
+  ).toHaveBeenLastCalledWith(0, 10);
+  engine.update(220, 0.1, 150, 0.5, 1);
+  engine.configure({ ...defaults, reverb: 0.5 });
+  expect(worklet).toHaveBeenCalledTimes(2);
   engine.silence();
-  expect(gains[1].gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 10, 0.008);
+  expect(params.get("gain")!.setValueAtTime).toHaveBeenLastCalledWith(0, 10);
+  expect(params.get("logFrequency")!.setValueAtTime).toHaveBeenLastCalledWith(
+    Math.log(220),
+    10,
+  );
 });
-it("encerra osciladores e contexto após fade", async () => {
+it("reports module failure and supports idempotent close during initialization", async () => {
   vi.useFakeTimers();
-  const { c, oscillators } = context();
+  const { c, worklet } = mockContext();
+  let resolve: () => void = () => {};
+  c.audioWorklet.addModule.mockReturnValue(
+    new Promise<void>((r) => {
+      resolve = r;
+    }),
+  );
   const engine = new ThereminEngine();
   const closing = engine.close();
-  expect(c.close).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(50);
+  expect(engine.close()).toBe(closing);
+  resolve();
+  await vi.advanceTimersByTimeAsync(80);
   await closing;
   expect(c.close).toHaveBeenCalledOnce();
-  expect(oscillators.every((o) => o.stop.mock.calls.length === 1)).toBe(true);
+  expect(worklet).not.toHaveBeenCalled();
+  c.audioWorklet.addModule.mockRejectedValue(new Error("module failed"));
+  const other = new ThereminEngine();
+  await expect(other.resume()).rejects.toThrow("module failed");
 });
-it("informa contexto bloqueado", async () => {
-  const { c } = context();
+it("rejects autoplay suspension and smoothly mutes processor failure", async () => {
+  const { c, worklet } = mockContext();
   c.state = "suspended";
   const engine = new ThereminEngine();
   await expect(engine.resume()).rejects.toThrow("Áudio bloqueado");
-});
-it("cria onda harmônica normalizada e reutiliza-a ao mudar efeitos", () => {
-  const { c } = context();
-  const engine = new ThereminEngine();
-  engine.configure(defaults);
-  expect(c.createPeriodicWave).toHaveBeenCalledOnce();
-  const coefficients = c.createPeriodicWave.mock.calls[0][1] as Float32Array;
-  expect(coefficients[1]).toBe(1);
-  expect(coefficients[2]).toBeGreaterThan(0);
-  engine.configure({ ...defaults, reverb: 0.25 });
-  expect(c.createPeriodicWave).toHaveBeenCalledOnce();
-  engine.configure({ ...defaults, waveform: "strings" });
-  expect(c.createPeriodicWave).toHaveBeenCalledTimes(2);
+  c.state = "running";
+  await engine.resume();
+  expect(engine.healthy).toBe(true);
+  worklet.mock.results[0].value.onprocessorerror();
+  expect(engine.healthy).toBe(false);
 });

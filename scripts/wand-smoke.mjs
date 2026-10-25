@@ -23,13 +23,7 @@ try {
     window.AudioContext = class extends Native {
       constructor(...args) {
         super(...args);
-        this.oscillators = [];
         window.contexts.push(this);
-      }
-      createOscillator() {
-        const o = super.createOscillator();
-        this.oscillators.push(o);
-        return o;
       }
       createMediaStreamDestination() {
         const d = super.createMediaStreamDestination();
@@ -53,18 +47,31 @@ try {
     () => document.querySelector("meter").value > 0.01,
   );
   await page.evaluate(() => {
-    const c = window.contexts[0],
-      a = c.createAnalyser();
-    a.fftSize = 2048;
-    c.createMediaStreamSource(c.output.stream).connect(a);
-    const g = c.createGain();
-    g.gain.value = 0;
-    a.connect(g).connect(c.destination);
-    window.level = () => {
-      const samples = new Float32Array(2048);
-      a.getFloatTimeDomainData(samples);
-      return Math.max(...samples.map(Math.abs));
+    window.measure = (c) => {
+      const a = c.createAnalyser();
+      a.fftSize = 4096;
+      c.createMediaStreamSource(c.output.stream).connect(a);
+      const g = c.createGain();
+      g.gain.value = 0;
+      a.connect(g).connect(c.destination);
+      return () => {
+        const samples = new Float32Array(4096);
+        a.getFloatTimeDomainData(samples);
+        const cross = [];
+        for (let i = 1; i < samples.length; i++)
+          if (samples[i - 1] < 0 && samples[i] >= 0)
+            cross.push(i - 1 - samples[i - 1] / (samples[i] - samples[i - 1]));
+        return {
+          peak: Math.max(...samples.map(Math.abs)),
+          frequency:
+            cross.length > 2
+              ? (c.sampleRate * (cross.length - 1)) / (cross.at(-1) - cross[0])
+              : 0,
+        };
+      };
     };
+    window.manual = window.measure(window.contexts[0]);
+    window.level = () => window.manual().peak;
   });
   await page.waitForFunction(() => window.level() > 0.001);
   const volume = await page.locator("meter").evaluate((e) => e.value);
@@ -98,13 +105,9 @@ try {
     window.hands[0].x = x;
   }, targetX);
   await page.waitForFunction(
-    () =>
-      Math.abs(window.contexts[0].oscillators[0].frequency.value - 261.625565) <
-      0.2,
+    () => Math.abs(window.manual().frequency - 261.625565) < 0.2,
   );
-  const manualFrequency = await page.evaluate(
-    () => window.contexts[0].oscillators[0].frequency.value,
-  );
+  const manualFrequency = await page.evaluate(() => window.manual().frequency);
   await page
     .getByRole("button", { name: "Encerrar guia", exact: true })
     .click();
@@ -141,16 +144,19 @@ try {
   await page
     .getByRole("button", { name: "♪ Ouvir música", exact: true })
     .click();
+  await page.waitForFunction(() => window.contexts.length === 2);
+  await page.evaluate(() => {
+    window.automatic = window.measure(window.contexts[1]);
+  });
   await page.waitForFunction(
     () =>
       window.contexts.length === 2 &&
-      Math.abs(window.contexts[1].oscillators[0].frequency.value - 261.625565) <
-        0.2,
+      Math.abs(window.automatic().frequency - 261.625565) < 0.2,
     {},
     { timeout: 8000 },
   );
   const automaticFrequency = await page.evaluate(
-    () => window.contexts[1].oscillators[0].frequency.value,
+    () => window.automatic().frequency,
   );
   if (Math.abs(manualFrequency - automaticFrequency) > 0.4)
     throw Error("Different pitch for same note");

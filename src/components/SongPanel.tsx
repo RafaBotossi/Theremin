@@ -239,7 +239,6 @@ export function SongPanel({
       ...settings,
       controlMode: settings.controlMode,
       scale: "free",
-      vibrato: 0,
       fMin: Math.max(
         40,
         Math.min(1800, Math.min(...frequencies) / 2 ** (1 / 12)),

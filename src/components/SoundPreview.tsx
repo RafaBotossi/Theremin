@@ -73,10 +73,7 @@ export function SoundPreview({
         }
         const phase = (elapsed % 0.65) / 0.65;
         const envelope = Math.sin(Math.PI * phase) ** 0.6;
-        const frequency =
-          440 *
-          2 ** ((notes[index] - 69) / 12) *
-          2 ** ((Math.sin(elapsed * 2 * Math.PI * 5) * 3) / 1200);
+        const frequency = 440 * 2 ** ((notes[index] - 69) / 12);
         audio.update(
           frequency,
           envelope * current.current.maxGain * 0.55,

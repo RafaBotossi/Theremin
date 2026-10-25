@@ -1,5 +1,15 @@
 # Validação — 25/10/2026
 
+## Motor aditivo e laboratório manual
+
+- Ensaio real no Chrome concluído em **900,171 segundos**, numa cópia isolada de produção do motor: 90 medições a cada aproximadamente 10 s, trocas de notas e presets, todos os estados `running`, nenhum erro e encerramento correto. Maior pico amostrado: **0,231173**; menor RMS amostrado: **0,038033**. Relatório: `test-results/audio-soak.json`. Este monitoramento amostral não afirma detectar todo glitch transitório entre medições; não equivale a ensaio em todos os dispositivos ou browsers. A primeira tentativa em dev foi interrompida pelo hot reload e não foi contada.
+- Síntese real em AudioWorklet, sem áudio gravado como fonte. A análise espectral do DSP verificou as proporções 1 / 0,28 / 0,12 / 0,05 / 0,02 e ausência de componente DC relevante. Testes verificam transição em ln(Hz), envelope, vibrato acionável, supressão de parciais acima de Nyquist, limiter com impulsos sobrecarregados, lifecycle assíncrono e calibração por gesto.
+- 65 testes passaram, incluindo laboratório sem câmera, ativação por clique, teclado com prioridade da última nota, soltura de vibrato, silêncio ao perder foco, liberação de contexto e reverb estéreo amortecido em aproximadamente 2 s. Lint, TypeScript e build passaram.
+- `scripts/audio-lab-smoke.mjs` passou no Chrome e Edge com Web Audio real: Lá4 medido próximo a 440 Hz, glissandos chegando a 880 e 220 Hz, vibrato ligando/desligando, apenas dois worklets por sessão, saída estéreo decorrelacionada e cauda desaparecendo. Bloqueio proposital da thread principal por 900 ms resultou em RMS abaixo de 0,0001 com reverb desligado. Não houve solicitação de câmera pelo laboratório.
+- Regressão de mãos controladas passou com o novo motor. Frequências medidas na saída para Dó4: aproximadamente 261,80 Hz manual e 261,77 Hz automática durante acomodação, sem comparar apenas o valor solicitado ao oscilador. O guia, silêncio ao dobrar o indicador e avanço por acerto continuam funcionando.
+- Testes de produção em localhost passaram no Chrome e Edge com modelo/WASM real e câmera sintética. Reprodução automática também passou: som real, silêncio em 0% e pausa, retomada em 1% e fechamento ao terminar.
+- Os testes medem sinal e funcionamento. Não constituem avaliação auditiva humana, medição da latência ponta a ponta em hardware real ou comprovação de reprodução exata do RCA/Clara Rockmore. O limiter protege picos de amostra; não é um limiter true-peak com oversampling.
+
 ## Varinha e avanço por acerto
 
 - Publicado no GitHub Pages; verificação do site público passou no Chrome e Edge com modelo/WASM reais e câmera sintética, sem erros de página, console ou requisições externas. O teste de calibração foi atualizado para a instrução de um indicador.

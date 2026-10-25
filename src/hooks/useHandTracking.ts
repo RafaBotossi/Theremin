@@ -182,6 +182,8 @@ export function useHandTracking(
         last = now;
         lastVideo = v.currentTime;
         try {
+          if (audio?.healthy === false)
+            throw new Error("Áudio interrompido. Pare e inicie novamente.");
           const s = current.current.settings;
           const t0 = performance.now();
           const found = tracker!.detect(v, now, s.landmark);
@@ -235,6 +237,7 @@ export function useHandTracking(
             gain,
             gate.remaining(performance.now()),
             expression,
+            s.gestureVibrato ? (roles.pitch?.vibratoExpression ?? 0) : 0,
           );
           const c = canvas.current,
             ctx = c?.getContext("2d");

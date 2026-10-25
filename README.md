@@ -25,6 +25,20 @@ npm run preview
 
 ## Controles e calibração
 
+### Motor de áudio e laboratório
+
+Abra **Laboratório de áudio → Ativar áudio**, sem câmera. Toque pelo teclado A W S E D F T G Y H U J K, pelos botões de notas ou pelo controle de glissando. **Sustentar nota** deixa as mãos livres para ajustar o som; **Silenciar** encerra a nota. **Classic RCA**, **Ethereal** e **Pure** preservam a calibração e o teto de volume. São timbres inspirados no theremin clássico, não uma reconstrução medida de um RCA ou da execução de Clara Rockmore.
+
+O motor soma cinco senóides em um AudioWorklet contínuo, com amplitudes iniciais **1 / 0,28 / 0,12 / 0,05 / 0,02**. Harmônicos podem ser editados e são atenuados antes de Nyquist. Mudanças de coeficientes têm suavização de 25 ms; a fase nunca reinicia ao mudar de nota. Pitch é suavizado em `ln(Hz)` por amostra (constante inicial 12 ms), com envelope de volume de 8 ms para ataque e 25 ms para release. São constantes exponenciais, não tempos para atingir 100% do alvo.
+
+Após a síntese: low-pass com corte proporcional à frequência e brilho; ressonância vocal larga em 900 Hz, Q 0,65, até +3 dB; reverb convolutivo estéreo gerado localmente, com reflexões iniciais e cauda amortecida de pequeno hall (RT60 aproximadamente 2 s, buffer de 2,2 s); mix wet/dry de potência constante; compressor suave de 1,5:1 com knee de 12 dB; limiter estéreo com antecipação de 3 ms e limiar de pico de amostra 0,94. O limiter é de picos de amostra, não uma garantia de true peak entre amostras.
+
+Vibrato automático varia de 5 a 6 Hz e 0 a 50 cents, mas sua expressão começa em zero: segure **V** ou **Segurar vibrato** para acioná-lo. Soltar faz a profundidade desaparecer suavemente. Nas mãos, oscilações horizontais produzem vibrato natural; opcionalmente **Acionar vibrato ao abrir o polegar** controla a profundidade automática pelo gesto. Fechar o polegar desativa essa modulação, sem afetar a nota do indicador.
+
+Webcam, músicas e laboratório compartilham o mesmo motor. A webcam envia apenas alvos; o áudio é renderizado em sua própria thread. Cada atualização agenda um prazo de segurança de até 150 ms para o rastreamento, seguido de release, mesmo com a thread principal travada. A cauda do reverb pode continuar após soltar uma nota; desligar fecha todo o contexto após um fade. Trocar de aba silencia. Não há MP3, bibliotecas extras ou chamadas externas para produzir o som. AudioWorklet requer HTTPS ou localhost; os módulos em `public/audio/` são publicados sob a base do Vite.
+
+Validação: `npm test` cobre DSP, lifecycle e UI. `node scripts/audio-lab-smoke.mjs` testa áudio real no dev server (`TEST_URL` e `TEST_BROWSER=msedge` são opcionais). `node scripts/audio-soak.mjs` faz ensaio de 900 segundos com troca de notas/presets; use uma versão de produção isolada, pois hot reload encerra o contexto. Relatórios ficam em `test-results/`. A fundamentação das APIs está na [especificação Web Audio](https://www.w3.org/TR/webaudio/).
+
 ### Escolha de música e guia visual
 
 **Tocar nota por nota** avança apenas após sustentar o alvo por 250 ms dentro de ±35 cents, com som audível. Apenas a bolinha da nota a tocar aparece. Não basta acertar o nome em outra oitava. Notas repetidas exigem dobrar e esticar o indicador. Nesse modo, as pausas e durações ficam a cargo de quem toca; a velocidade controla apenas a reprodução e o guia com tempo. **Avanço da música** permite alternar os dois modos.
@@ -53,7 +67,7 @@ A referência é [The Ecstasy of Gold — Theremin & Voice, Carolina Eyck](https
 
 **Livre** mantém frequência contínua para avaliar afinação. Assistida atrai suavemente a frequência para perto das notas sem criar degraus; cromática e pentatônica são quantizadas. A régua mostra posições com os dedos em postura intermediária, nota ativa e desvio em cents. Em **Configurações → Modo de controle**, é possível voltar aos eixos da tela. O brilho por altura da mão só se aplica nesse modo anterior.
 
-**Treino**, **Melódico**, **Cordas** e **Etéreo** configuram timbre, faixa, afinação e efeitos sem alterar calibração, mão dominante ou ganho máximo. O timbre usa PeriodicWave normalizada com vários harmônicos; osciladores senoidal, triangular e serra continuam disponíveis. Pequenos movimentos de pitch permitem vibrato manual.
+**Treino**, **Melódico**, **Cordas** e **Etéreo** continuam disponíveis junto aos novos presets. Configuram timbre, faixa, afinação e efeitos sem alterar calibração, modo de controle ou ganho máximo. Os timbres legados agora usam combinações de até cinco parciais no motor aditivo. Pequenos movimentos de pitch permitem vibrato manual.
 
 **Ouvir exemplo** toca uma frase de cerca de cinco segundos com o timbre escolhido, após clique, sem pedir câmera. O exemplo para automaticamente, ao clicar novamente ou ao ocultar a página; fica indisponível durante uma sessão de câmera. O ganho padrão permanece 0,18, limitado a 0,25. A configuração sonora antiga só é migrada automaticamente se ainda corresponder ao padrão original (senoide, modo livre, 110–1760 Hz); calibração e limite de ganho são preservados.
 

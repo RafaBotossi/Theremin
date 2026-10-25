@@ -1,5 +1,66 @@
 import type { Settings } from "../types/theremin";
 export const presets = {
+  classic: {
+    name: "Classic RCA",
+    description:
+      "Fundamental macia, harmônicos suaves e ressonância vocal discreta. Vibrato manual.",
+    values: {
+      waveform: "theremin",
+      harmonic1: 1,
+      harmonic2: 0.28,
+      harmonic3: 0.12,
+      harmonic4: 0.05,
+      harmonic5: 0.02,
+      brightness: 0.4,
+      vocalResonance: 0.4,
+      vibrato: 12,
+      vibratoRate: 5.5,
+      glide: 0.012,
+      reverb: 0.16,
+      delay: 0,
+      gestureTone: false,
+    },
+  },
+  ethereal: {
+    name: "Ethereal",
+    description: "Som macio com espaço estéreo e cauda de pequeno hall.",
+    values: {
+      waveform: "theremin",
+      harmonic1: 1,
+      harmonic2: 0.18,
+      harmonic3: 0.07,
+      harmonic4: 0.025,
+      harmonic5: 0.01,
+      brightness: 0.28,
+      vocalResonance: 0.2,
+      vibrato: 16,
+      vibratoRate: 5.2,
+      glide: 0.02,
+      reverb: 0.42,
+      delay: 0,
+      gestureTone: false,
+    },
+  },
+  pure: {
+    name: "Pure",
+    description: "Quase senoidal, com um pouco de calor e sem reverb.",
+    values: {
+      waveform: "theremin",
+      harmonic1: 1,
+      harmonic2: 0.045,
+      harmonic3: 0.01,
+      harmonic4: 0,
+      harmonic5: 0,
+      brightness: 0.35,
+      vocalResonance: 0,
+      vibrato: 10,
+      vibratoRate: 5.5,
+      glide: 0.01,
+      reverb: 0,
+      delay: 0,
+      gestureTone: false,
+    },
+  },
   practice: {
     name: "Treino",
     description:
@@ -81,6 +142,6 @@ export function applyPreset(
   };
 }
 export const harmonics = {
-  theremin: [0, 1, 0.34, 0.17, 0.08, 0.035, 0.015],
+  theremin: [0, 1, 0.28, 0.12, 0.05, 0.02],
   strings: [0, 1, 0.48, 0.26, 0.17, 0.095, 0.06, 0.03, 0.018],
 };

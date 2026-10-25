@@ -68,6 +68,7 @@ main {
 }
 header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 24px;
   border-bottom: 1px solid #242c38;
@@ -1079,4 +1080,39 @@ footer {
   .stage-top {
     letter-spacing: 0;
   }
+}
+/* Manual sound laboratory shares the same engine as hand tracking. */
+.audio-lab > h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+.audio-lab > p {
+  margin: 1.5rem 0;
+}
+.audio-lab .song-panel,
+.audio-lab .settings {
+  margin-top: 2rem;
+}
+.lab-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.5rem 0;
+}
+.lab-keys button {
+  min-height: 5rem;
+  min-width: 3.3rem;
+  flex: 1;
+  touch-action: none;
+}
+.lab-keys button[aria-pressed="true"],
+.audio-lab button[aria-pressed="true"] {
+  background: #67e8c2;
+  color: #0b141c;
+}
+.audio-lab input[type="range"] {
+  width: 100%;
+}
+.audio-lab output {
+  color: #67e8c2;
+  font-variant-numeric: tabular-nums;
 }

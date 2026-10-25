@@ -12,7 +12,9 @@ import { PracticePanel } from "../components/PracticePanel";
 import { SongPanel } from "../components/SongPanel";
 import { emptyGuide } from "../music/song";
 import { PitchFeedback } from "../components/PitchFeedback";
+import { AudioLab } from "../components/AudioLab";
 export function App() {
+  const [lab, setLab] = useState(false);
   const [settings, setSettings] = useState(loadSettings),
     [muted, setMuted] = useState(false),
     [config, setConfig] = useState(false),
@@ -118,6 +120,14 @@ export function App() {
       setRecording(false);
     }
   }, [running]);
+  if (lab)
+    return (
+      <AudioLab
+        settings={settings}
+        onSettings={update}
+        onBack={() => setLab(false)}
+      />
+    );
   return (
     <main>
       <header>
@@ -125,6 +135,14 @@ export function App() {
           <span className="brand-icon">∿</span> AIR THEREMIN
         </a>
         <span className="local-badge">◉ PROCESSAMENTO LOCAL</span>
+        <button
+          onClick={() => {
+            stop();
+            setLab(true);
+          }}
+        >
+          Laboratório de áudio
+        </button>
         <button aria-expanded={config} onClick={() => setConfig(!config)}>
           Configurações
         </button>
