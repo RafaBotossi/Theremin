@@ -2,6 +2,7 @@
 
 ## Varinha e avanço por acerto
 
+- Publicado no GitHub Pages; verificação do site público passou no Chrome e Edge com modelo/WASM reais e câmera sintética, sem erros de página, console ou requisições externas. O teste de calibração foi atualizado para a instrução de um indicador.
 - 58 testes unitários/UI passaram. Cobrem indicador esticado/dobrado, ângulos invariantes a escala/rotação, qualquer mão nas duas funções, estabilidade com reordenação das mãos, mapeamento da régua à frequência e calibração automática com uma mão.
 - Avanço por acerto exige 250 ms dentro de ±35 cents, na oitava correta e com ganho audível. Testes verificam nota errada, silêncio, bloqueio, nota repetida e ausência de avanço por tempo ou por amostra congelada. O guia publica apenas o alvo atual.
 - `node scripts/wand-smoke.mjs` passou com landmarks controlados e Web Audio real no servidor de desenvolvimento: mão esquerda e direita individualmente, volume vertical, silêncio ao dobrar, avanço ao acertar e nenhum alvo futuro. Dó4 manual: 261,717 Hz; referência: 261,752 Hz durante acomodação do oscilador. Capturas desktop/mobile inspecionadas, sem overflow ou erros de página.

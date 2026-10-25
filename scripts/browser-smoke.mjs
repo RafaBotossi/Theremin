@@ -62,7 +62,10 @@ for (const channel of ["chrome", "msedge"]) {
     await page.getByRole("button", { name: "Calibrar", exact: true }).click();
     await page
       .getByRole("status")
-      .filter({ hasText: "Mostre as duas mãos. O avanço é automático." })
+      .filter({
+        hasText:
+          "Mostre uma mão com o indicador esticado. O avanço é automático.",
+      })
       .waitFor();
     await page.getByRole("button", { name: "Cancelar", exact: true }).click();
     await page.getByRole("button", { name: "Parar", exact: true }).click();
