@@ -19,7 +19,7 @@ try {
     if (!localStorage.getItem("air-theremin-settings"))
       localStorage.setItem(
         "air-theremin-settings",
-        JSON.stringify({ controlMode: "antennas", pitchLeft: false, handLayoutVersion: 3 }),
+        JSON.stringify({ controlMode: "antennas", pitchLeft: false, handLayoutVersion: 4 }),
       );
     window.testHands = [
       { x: 0.25, y: 0.6 },
@@ -184,4 +184,5 @@ try {
 } finally {
   await browser.close();
 }
+
 

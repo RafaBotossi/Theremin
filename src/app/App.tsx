@@ -392,7 +392,13 @@ export function App() {
                   ? "Controle de volume"
                   : "Mão de volume"}
               </span>
-              <strong>{r.volume ? "● Detectada" : "○ Ausente"}</strong>
+              <strong>
+                {settings.controlMode === "wand"
+                  ? "Valor mantido"
+                  : r.volume
+                    ? "● Detectada"
+                    : "○ Ausente"}
+              </strong>
             </span>
           </div>
           <label>
@@ -523,8 +529,8 @@ export function App() {
           <div>
             <h3>Abra seu espaço</h3>
             <p>
-              Boa luz e as duas mãos no quadro. Use o indicador na mão de nota e
-              a palma aberta na mão de volume.
+              Use o indicador na mão de nota. Mostre a palma da outra mão apenas
+              quando quiser ajustar o volume.
             </p>
           </div>
         </article>
@@ -547,8 +553,8 @@ export function App() {
             <h3>Dê intensidade</h3>
             <p>
               Eleve a mão de volume com a palma aberta para aumentar; abaixe
-              para diminuir. Feche a palma para manter o volume. Dobre o
-              indicador da mão de nota para silenciar.
+              para diminuir. Feche ou retire essa mão para manter o volume.
+              Dobre o indicador da mão de nota para silenciar.
             </p>
           </div>
         </article>

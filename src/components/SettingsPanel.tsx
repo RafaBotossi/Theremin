@@ -176,7 +176,7 @@ export function SettingsPanel({
       </div>
       <p>
         {s.controlMode === "wand"
-          ? "Indicador esticado controla a nota na horizontal; dobrado silencia. A outra mão, com a palma aberta, ajusta volume pela altura; fechada mantém o valor. Mantenha as duas mãos visíveis."
+          ? "Indicador esticado controla a nota na horizontal; dobrado silencia. A outra mão, com a palma aberta, ajusta volume pela altura. Fechá-la ou retirá-la mantém o volume até o próximo ajuste."
           : s.pitchLeft
             ? "Mão esquerda: nota. Mão direita: volume."
             : "Mão direita: nota. Mão esquerda: volume."}{" "}

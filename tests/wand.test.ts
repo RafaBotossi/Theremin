@@ -15,9 +15,9 @@ function hand(x: number, label = "Left"): Hand {
     landmarks[id] = { x, y: 0.7 - (id - 5) * 0.1, z: 0 };
   return { point: { x: 0.9, y: 0.9 }, landmarks, label, score: 0.5 };
 }
-it("separa indicador esquerdo e volume direito, inclusive ao cruzar as mãos", () => {
-  const left = { ...hand(0.8, "Right"), score: 1 };
-  const right = { ...hand(0.2, "Left"), score: 1 };
+it("inverte os papéis mantendo nota e volume separados ao cruzar as mãos", () => {
+  const left = { ...hand(0.8, "Left"), score: 1 };
+  const right = { ...hand(0.2, "Right"), score: 1 };
   expect(selectHands([right, left], defaults)).toEqual({
     pitch: left,
     volume: right,

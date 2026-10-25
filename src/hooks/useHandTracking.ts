@@ -202,7 +202,11 @@ export function useHandTracking(
           }
           // Freshness begins at completion: a slow inference must not
           // expire a newly detected pair before it can drive the audio.
-          const safe = gate.update(detectedAt, !!roles.pitch, !!roles.volume);
+          const safe = gate.update(
+            detectedAt,
+            !!roles.pitch,
+            s.controlMode === "wand" || !!roles.volume,
+          );
           let gain = 0;
           if (roles.pitch) {
             expression =
@@ -226,7 +230,7 @@ export function useHandTracking(
             (s.controlMode !== "wand" || hasOpenPalm(roles.volume))
           )
             heldVolume = volumeControl(roles.volume, s);
-          if (roles.volume && safe) {
+          if (safe && (s.controlMode === "wand" || roles.volume)) {
             const t = volumeFilter.update(heldVolume, dt, s.smoothing);
             gain = t * t * s.maxGain;
           } else volumeFilter.reset();
@@ -317,7 +321,7 @@ export function useHandTracking(
               frequency,
               gain,
               pitch: !!roles.pitch,
-              volume: !!roles.volume,
+              volume: s.controlMode === "wand" || !!roles.volume,
               outside: outsideField(roles.pitch, roles.volume, s),
               fps: 1 / dt,
               inferenceMs,

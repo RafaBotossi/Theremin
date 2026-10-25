@@ -103,7 +103,7 @@ it("conta três segundos, destaca notas, pausa e encerra o guia", () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Iniciar guia" }));
   expect(onSettings.mock.calls[0][0]).toMatchObject({
-    pitchLeft: true,
+    pitchLeft: false,
     scale: "free",
   });
   act(() => vi.advanceTimersByTime(3100));

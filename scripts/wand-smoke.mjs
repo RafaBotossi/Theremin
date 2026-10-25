@@ -18,8 +18,8 @@ try {
   await page.addInitScript(() => {
     localStorage.clear();
     window.hands = [
-      { x: 0.5, y: 0.5, label: "Right", straight: true },
-      { x: 0.8, y: 0.5, label: "Left", straight: true, palmOpen: true },
+      { x: 0.5, y: 0.5, label: "Left", straight: true },
+      { x: 0.8, y: 0.5, label: "Right", straight: true, palmOpen: true },
     ];
     window.contexts = [];
     const Native = window.AudioContext;
@@ -77,11 +77,16 @@ try {
     window.level = () => window.manual().peak;
   });
   await page.waitForFunction(() => window.level() > 0.001);
+  const beforeRemoval = await page.locator("meter").evaluate((e) => e.value);
   const volumeHand = await page.evaluate(() => window.hands.pop());
-  await page.waitForFunction(
-    () =>
-      window.level() < 0.0001 && document.querySelector("meter").value === 0,
-  );
+  await page.waitForTimeout(1800);
+  if (
+    Math.abs(
+      (await page.locator("meter").evaluate((e) => e.value)) - beforeRemoval,
+    ) > 0.002 ||
+    (await page.evaluate(() => window.level())) < 0.001
+  )
+    throw Error("Removing volume hand changed the held volume");
   await page.evaluate((h) => window.hands.push(h), volumeHand);
   await page.waitForFunction(() => window.level() > 0.001);
   const volume = await page.locator("meter").evaluate((e) => e.value);
@@ -211,6 +216,7 @@ try {
   if (errors.length) throw Error(errors.join("\n"));
   const report = {
     separateHands: true,
+    absentVolumeHandKeepsSound: true,
     closedPalmHoldsVolume: true,
     foldedSilent: true,
     oneTarget: true,

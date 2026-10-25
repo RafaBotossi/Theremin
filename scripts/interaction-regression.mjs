@@ -23,7 +23,7 @@ try {
       JSON.stringify({
         controlMode: "screen",
         pitchLeft: false,
-        handLayoutVersion: 3,
+        handLayoutVersion: 4,
       }),
     );
     window.testHands = [
@@ -182,4 +182,5 @@ try {
 } finally {
   await browser.close();
 }
+
 

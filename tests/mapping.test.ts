@@ -38,6 +38,7 @@ it("padrão usa esquerda na nota, direita no volume e permite inverter", () => {
         ...baseDefaults,
         controlMode: "antennas",
         assignment,
+        pitchLeft: true,
       }),
     ).toEqual({ pitch: left, volume: right });
     expect(

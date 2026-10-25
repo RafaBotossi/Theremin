@@ -53,7 +53,7 @@ export interface Settings {
   delay: number;
 }
 export const defaults: Settings = {
-  handLayoutVersion: 3,
+  handLayoutVersion: 4,
   controlMode: "wand",
   antennaX: 0.9,
   antennaY: 0.8,
@@ -71,7 +71,7 @@ export const defaults: Settings = {
   smoothing: 0.045,
   invertPitch: false,
   invertVolume: false,
-  pitchLeft: true,
+  pitchLeft: false,
   assignment: "anatomical",
   landmark: "palm",
   waveform: "theremin",
@@ -163,10 +163,11 @@ export function loadSettings(): Settings {
         vibrato: 0,
       });
     }
-    // Apply the requested left-note layout once, including older saved inversions.
+    // Swap the previous layout once; subsequent user swaps remain persistent.
     // Subsequent explicit swaps carry this version and remain persistent.
     if (saved.handLayoutVersion !== defaults.handLayoutVersion) {
-      saved.pitchLeft = true;
+      saved.pitchLeft =
+        saved.handLayoutVersion === 3 ? !saved.pitchLeft : false;
       saved.assignment = "anatomical";
       saved.invertVolume = false;
       saved.controlMode = "wand";

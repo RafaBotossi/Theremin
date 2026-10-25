@@ -1,6 +1,6 @@
 # Air Theremin
 
-Instrumento para webcam, feito com React, TypeScript strict, Vite, MediaPipe Hand Landmarker e Web Audio. O padrão usa indicador esquerdo na nota e palma direita no volume; o modo de duas antenas continua disponível nas configurações. Vídeo, landmarks e som são processados no navegador. Não há backend, analytics, microfone, conta, API remota nem CDN em execução.
+Instrumento para webcam, feito com React, TypeScript strict, Vite, MediaPipe Hand Landmarker e Web Audio. Usa o indicador de uma mão na nota e a palma da outra para ajustar o volume; o modo de duas antenas continua disponível nas configurações. Vídeo, landmarks e som são processados no navegador. Não há backend, analytics, microfone, conta, API remota nem CDN em execução.
 
 ## Executar
 
@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Abra a URL localhost indicada pelo Vite ou https://rafabotossi.github.io/Theremin/. Clique **Iniciar câmera e áudio** e permita a webcam. Use boa iluminação e as duas mãos visíveis: o indicador esquerdo escolhe a nota na horizontal. A palma direita aberta controla o volume pela altura: subir aumenta, descer diminui. Fechá-la mantém o último volume; ao iniciar, abra a palma para definir o volume. Dobrar o indicador esquerdo ou perder o rastreamento silencia. Configurações permite inverter as mãos. **Parar** libera câmera e AudioContext. **Mutar** mantém o rastreamento sem som. A gravação captura somente a síntese e permite baixar o arquivo localmente, sem upload.
+Abra a URL localhost indicada pelo Vite ou https://rafabotossi.github.io/Theremin/. Clique **Iniciar câmera e áudio** e permita a webcam. O indicador escolhe a nota na horizontal. A palma aberta da outra mão ajusta o volume pela altura: subir aumenta, descer diminui. Fechar ou retirar a mão de volume mantém o último valor durante a sessão; ao iniciar, abra a palma para definir o volume. Dobrar o indicador de nota ou perder seu rastreamento silencia. A versão 4 inverte os lados da versão anterior uma única vez; Configurações permite inverter novamente. **Parar** libera câmera e AudioContext. **Mutar** mantém o rastreamento sem som. A gravação captura somente a síntese e permite baixar o arquivo localmente, sem upload.
 
 ```sh
 npm run lint

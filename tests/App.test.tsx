@@ -17,7 +17,11 @@ import { App } from "../src/app/App";
 it("corrige configuração antiga e mantém régua na haste ao trocar lados", () => {
   localStorage.setItem(
     "air-theremin-settings",
-    JSON.stringify({ pitchLeft: false, assignment: "anatomical" }),
+    JSON.stringify({
+      handLayoutVersion: 3,
+      pitchLeft: false,
+      assignment: "anatomical",
+    }),
   );
   const view = render(<App />);
   expect(view.container.querySelector(".volume-antenna")).toBeNull();
@@ -109,6 +113,6 @@ it("expõe configuração manual e persiste somente parâmetros", () => {
   );
   expect(
     JSON.parse(localStorage.getItem("air-theremin-settings")!).pitchLeft,
-  ).toBe(false);
+  ).toBe(true);
   expect(screen.getByLabelText("Identificação das mãos")).toBeVisible();
 });
