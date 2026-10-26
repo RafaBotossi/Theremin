@@ -3,13 +3,13 @@ import { easyPitch } from "../src/music/easyPitch";
 import { midiFrequency } from "../src/music/song";
 import { emptyMatch, matchNote } from "../src/music/noteMatch";
 import { emptyReading } from "../src/types/theremin";
-it("corrects either neighboring semitone to the target, without changing distant notes", () => {
+it("corrects up to three semitones on either side of the target, without changing distant notes", () => {
   for (const target of [48, 69, 84]) {
-    for (const offset of [-1, -0.8, 0, 0.8, 1])
+    for (const offset of [-3, -2, -1, -0.8, 0, 0.8, 1, 2, 3])
       expect(easyPitch(midiFrequency(target + offset), target)).toBeCloseTo(
         midiFrequency(target),
       );
-    for (const offset of [-12, -1.01, 1.01, 12])
+    for (const offset of [-12, -3.01, 3.01, 12])
       expect(easyPitch(midiFrequency(target + offset), target)).toBe(
         midiFrequency(target + offset),
       );
@@ -17,7 +17,7 @@ it("corrects either neighboring semitone to the target, without changing distant
   expect(easyPitch(450, null)).toBe(450);
 });
 it("counts a corrected note only after the normal hold time and never while silent", () => {
-  const raw = midiFrequency(70);
+  const raw = midiFrequency(72);
   const reading = {
     ...emptyReading,
     pitch: true,

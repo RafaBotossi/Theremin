@@ -396,7 +396,7 @@ export function SongPanel({
           </button>
           <button
             aria-pressed={easy}
-            title="Corrige até um semitom acima ou abaixo do alvo"
+            title="Corrige até três semitons acima ou abaixo do alvo"
             onClick={() => {
               setEasy(true);
               match.current = { ...emptyMatch };

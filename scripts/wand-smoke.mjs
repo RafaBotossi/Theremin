@@ -164,7 +164,7 @@ try {
       x +
       ((s.invertPitch ? -1 : 1) *
         (s.pitchMax - s.pitchMin) *
-        ((0.8 / 12) * Math.log(2))) /
+        ((2.8 / 12) * Math.log(2))) /
         Math.log(s.fMax / s.fMin) /
         s.sensitivity
     );
