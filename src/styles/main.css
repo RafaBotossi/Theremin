@@ -1609,3 +1609,23 @@ footer {
     font-size: 10px;
   }
 }
+.instrument-app .console .hand-swap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9aa9bc;
+  cursor: pointer;
+}
+.hand-swap input {
+  margin: 0;
+  accent-color: #86b5a7;
+}
+@media (max-width: 720px) {
+  .instrument-app .console > .hand-swap {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+}

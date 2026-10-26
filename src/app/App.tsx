@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useHandTracking } from "../hooks/useHandTracking";
 import { loadSettings, sanitize, type Settings } from "../types/theremin";
-import { noteName } from "../mapping/gestureMapping";
 import { CalibrationWizard } from "../components/CalibrationWizard";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { NoteGuide } from "../components/NoteGuide";
@@ -321,12 +320,16 @@ export function App() {
               </button>
             ))}
           </div>
-          <div className="note">
-            <span>{running && r.pitch ? noteName(r.frequency) : "—"}</span>
-            <small>
-              {running && r.pitch ? r.frequency.toFixed(1) : "—"} <b>Hz</b>
-            </small>
-          </div>
+          <label className="hand-swap">
+            <input
+              type="checkbox"
+              checked={!settings.pitchLeft}
+              onChange={(e) =>
+                update({ ...settings, pitchLeft: !e.target.checked })
+              }
+            />
+            Inverter mãos
+          </label>
           <div className="volume-label">
             <span>VOLUME</span>
             <span>{Math.round(volume * 100)}%</span>
