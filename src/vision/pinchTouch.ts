@@ -102,25 +102,58 @@ export class PinchTouch {
   }
   update(hands: Hand[], now: number): Hand | undefined {
     const available = this.tracks.filter((t) => now - t.seen <= 150);
-    const next: Track[] = [];
-    for (const hand of hands) {
-      const signal = separation(hand);
-      if (!Number.isFinite(signal) || signal < 0) continue;
-      const distance = (t: Track) =>
-        Math.hypot(
-          palmPoint(hand).x - palmPoint(t.hand).x,
-          palmPoint(hand).y - palmPoint(t.hand).y,
+    const detected = hands
+      .filter((hand) => {
+        const signal = separation(hand);
+        return Number.isFinite(signal) && signal >= 0;
+      })
+      .slice(0, 2);
+    // Match both hands together before allocating voices. A greedy match can
+    // steal the other hand's pinch; disappeared tracks must not reserve a voice.
+    let assignment: (Track | undefined)[] = [];
+    let bestCount = -1,
+      bestCost = Infinity;
+    const search = (chosen: (Track | undefined)[], cost: number) => {
+      if (chosen.length === detected.length) {
+        const count = chosen.filter(Boolean).length;
+        if (count > bestCount || (count === bestCount && cost < bestCost)) {
+          assignment = [...chosen];
+          bestCount = count;
+          bestCost = cost;
+        }
+        return;
+      }
+      const hand = detected[chosen.length];
+      search([...chosen, undefined], cost);
+      for (const track of available) {
+        if (chosen.includes(track)) continue;
+        const distance = Math.hypot(
+          palmPoint(hand).x - palmPoint(track.hand).x,
+          palmPoint(hand).y - palmPoint(track.hand).y,
         );
-      const previous = available.reduce<Track | undefined>(
-        (best, t) => (!best || distance(t) < distance(best) ? t : best),
-        undefined,
-      );
-      const track = previous && distance(previous) < 0.3 ? previous : undefined;
-      if (track) available.splice(available.indexOf(track), 1);
-      const voice = [0, 1].find(
-        (slot) => ![...next, ...available].some((t) => t.voice === slot),
-      );
-      if (!track && voice === undefined) continue;
+        const labelled =
+          !!hand.label &&
+          !!track.hand.label &&
+          hand.score >= 0.75 &&
+          track.hand.score >= 0.75;
+        const same = labelled && hand.label === track.hand.label;
+        if (distance >= (same ? 0.45 : 0.3)) continue;
+        search(
+          [...chosen, track],
+          cost + distance + (labelled && !same ? 0.25 : 0),
+        );
+      }
+    };
+    search([], 0);
+    const reserved = new Set(assignment.flatMap((t) => (t ? [t.voice] : [])));
+    const next: Track[] = [];
+    for (let i = 0; i < detected.length; i++) {
+      const hand = detected[i],
+        signal = separation(hand),
+        track = assignment[i];
+      const voice = track?.voice ?? [0, 1].find((slot) => !reserved.has(slot));
+      if (voice === undefined) continue;
+      reserved.add(voice);
       const t = track ?? {
         voice: voice!,
         attack: 0,

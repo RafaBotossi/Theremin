@@ -203,3 +203,32 @@ it("keeps stable voice slots when detection order changes and releases each pinc
   touch.update([], 160);
   expect(touch.active).toHaveLength(0);
 });
+
+it("does not let a missing old hand reserve a voice and delay a new pinch", () => {
+  const touch = new PinchTouch();
+  touch.update([hand(0.1, 0.1), hand(0.5, 0.1)], 0);
+  touch.update([hand(0.1, 0.1), hand(0.5, 0.1)], 33);
+  const survivor = touch.active.find((t) => t.hand.point.x === 0.5)!;
+  const attack = survivor.attack,
+    voice = survivor.voice;
+  touch.update([hand(0.95, 0.1), hand(0.5, 0.1)], 66);
+  touch.update([hand(0.95, 0.1), hand(0.5, 0.1)], 99);
+  expect(touch.active).toHaveLength(2);
+  expect(touch.active.find((t) => t.hand.point.x === 0.5)).toMatchObject({
+    attack,
+    voice,
+  });
+});
+it("matches hands jointly when one moves close to the other, in either detection order", () => {
+  for (const reverse of [false, true]) {
+    const touch = new PinchTouch();
+    touch.update([hand(0.2, 0.1), hand(0.5, 0.8)], 0);
+    touch.update([hand(0.2, 0.1), hand(0.5, 0.8)], 33);
+    const { attack, voice } = touch.active[0];
+    const moved = [hand(0.36, 0.26), hand(0.52, 0.8)];
+    touch.update(reverse ? moved.reverse() : moved, 66);
+    expect(touch.active).toHaveLength(1);
+    expect(touch.active[0]).toMatchObject({ attack, voice });
+    expect(touch.active[0].hand.point.x).toBe(0.36);
+  }
+});
