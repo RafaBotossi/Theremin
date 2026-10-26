@@ -19,6 +19,7 @@ import {
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
 import { PinchTouch, selectOpenPalm } from "../vision/pinchTouch";
+import { MotionVibrato } from "../vision/motionVibrato";
 import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
 import { easyPitch, PinchTarget, type EasyTarget } from "../music/easyPitch";
 const connections = [
@@ -162,6 +163,7 @@ export function useHandTracking(
       let volumeHand: Hand | undefined;
       const pinchTouch = new PinchTouch();
       const pinchTarget = new PinchTarget();
+      const motionVibrato = new MotionVibrato();
       const volumeLatch = new VolumeLatch(loadVolume());
       let heldVolume = volumeLatch.value;
       timer = window.setInterval(() => {
@@ -175,6 +177,7 @@ export function useHandTracking(
           if (stale) {
             hands.current = [];
             pinchTouch.reset();
+            motionVibrato.reset();
           }
           setReading((r) => ({
             ...r,
@@ -242,6 +245,20 @@ export function useHandTracking(
             s.controlMode === "wand" || !!roles.volume,
           );
           let gain = 0;
+          const handVibrato = motionVibrato.update(
+            roles.pitch &&
+              s.controlMode === "wand" &&
+              !current.current.muted &&
+              !current.current.calibrating
+              ? 1200 *
+                  Math.log2(
+                    frequencyAt(pitchControl(roles.pitch, s), s.fMin, s.fMax) /
+                      440,
+                  )
+              : null,
+            detectedAt,
+            pinchTouch.attack,
+          );
           const target = pinchTarget.update(
             current.current.easyTarget,
             current.current.latchEasyTarget,
@@ -292,7 +309,11 @@ export function useHandTracking(
             gain,
             gate.remaining(performance.now()),
             expression,
-            s.gestureVibrato ? (roles.pitch?.vibratoExpression ?? 0) : 0,
+            s.controlMode === "wand"
+              ? handVibrato
+              : s.gestureVibrato
+                ? (roles.pitch?.vibratoExpression ?? 0)
+                : 0,
           );
           const c = canvas.current,
             ctx = c?.getContext("2d");

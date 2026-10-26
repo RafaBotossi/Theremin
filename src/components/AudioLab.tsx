@@ -356,7 +356,7 @@ export function AudioLab({
                 onSettings({ ...s, gestureVibrato: e.target.checked })
               }
             />
-            Nas mãos: abrir o polegar aciona vibrato
+            Outros modos: abrir o polegar aciona vibrato
           </label>
           {range("glide", "Suavização do glissando (s)", 0.003, 0.15, 0.001)}
           {range("reverb", "Reverb estéreo · wet/dry", 0, 0.6, 0.01)}
@@ -392,9 +392,9 @@ export function AudioLab({
         </div>
         <p>
           O vibrato automático só entra enquanto você segura V ou o botão. Nas
-          mãos, pequenas oscilações horizontais produzem o vibrato naturalmente.
-          A opção de polegar permite dosar o vibrato automático sem soltar o
-          indicador.
+          mãos, oscile suavemente na horizontal mantendo a pinça fechada. O
+          vibrato funciona também no Easy e diminui quando a mão para. Ajuste a
+          profundidade acima; zero desativa o efeito.
         </p>
       </section>
     </main>

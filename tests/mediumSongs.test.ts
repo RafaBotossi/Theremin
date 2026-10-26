@@ -7,6 +7,8 @@ it.each([
   ["brahms-lullaby", 17, 48, 72],
   ["minuet-g", 32, 96, 72],
   ["ave-maria", 12, 48, 60],
+  ["fur-elise", 9, 24, 60],
+  ["new-world-largo", 12, 48, 48],
 ])("validates solo score and rhythm for %s", (id, bars, beats, bpm) => {
   const notes = mediumSongs.find((song) => song.id === id)!.melody.notes;
   expect(isPolyphonic(notes)).toBe(false);

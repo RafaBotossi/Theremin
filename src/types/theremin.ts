@@ -153,9 +153,9 @@ export function sanitize(input: Partial<Settings>): Settings {
 }
 export function loadSettings(): Settings {
   try {
-    const saved = JSON.parse(
-      localStorage.getItem("air-theremin-settings") || "{}",
-    );
+    const stored = localStorage.getItem("air-theremin-settings");
+    if (!stored) return { ...defaults };
+    const saved = JSON.parse(stored);
     // Introduce antenna practice without discarding the user's selected scale.
     if (saved.controlMode === undefined) {
       Object.assign(saved, {

@@ -50,6 +50,46 @@ const minuetA = [
 ];
 export const mediumSongs: StudySong[] = [
   {
+    id: "fur-elise",
+    label: "Für Elise · Beethoven · tema",
+    melody: score("Für Elise · tema inicial", 60, [
+      "E5:0.5 D#5:0.5",
+      "E5:0.5 D#5:0.5 E5:0.5 B4:0.5 D5:0.5 C5:0.5",
+      "A4 -:0.5 C4:0.5 E4:0.5 A4:0.5",
+      "B4 -:0.5 E4:0.5 G#4:0.5 B4:0.5",
+      "C5 -:0.5 E4:0.5 E5:0.5 D#5:0.5",
+      "E5:0.5 D#5:0.5 E5:0.5 B4:0.5 D5:0.5 C5:0.5",
+      "A4 -:0.5 C4:0.5 E4:0.5 A4:0.5",
+      "B4 -:0.5 E4:0.5 C5:0.5 B4:0.5",
+      "A4:2",
+    ]),
+    source: "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=931",
+    credit:
+      "Beethoven · edição Stelios Samelis, domínio público. Tema inicial, mão direita, sem repetição. Valores rítmicos dobrados para estudo em 3/4, 60 BPM; anacruse e pausas preservadas.",
+  },
+  {
+    id: "new-world-largo",
+    label: "Novo Mundo · Dvořák · Largo",
+    melody: score("Sinfonia do Novo Mundo · tema Largo", 48, [
+      "E4:0.75 G4:0.25 G4 E4:0.75 D4:0.25 C4",
+      "D4:0.75 E4:0.25 G4:0.75 E4:0.25 D4:2",
+      "E4:0.75 G4:0.25 G4 E4:0.75 D4:0.25 C4",
+      "D4:0.5 E4:0.5 D4:0.75 C4:0.25 C4:2",
+      "A4:0.75 C5:0.25 C5 B4:0.5 G4:0.5 A4",
+      "A4:0.5 C5:0.5 B4:0.5 G4:0.5 A4:2",
+      "A4:0.75 C5:0.25 C5 B4:0.5 G4:0.5 A4",
+      "A4:0.5 C5:0.5 B4:0.5 G4:0.5 A4:2",
+      "E4:0.75 G4:0.25 G4 E4:0.5 D4:0.5 C4",
+      "D4:0.75 E4:0.25 G4:0.75 E4:0.25 D4:2",
+      "E4:0.75 G4:0.25 G4 C4:0.75 D4:0.25 E4",
+      "D4:0.75 C4:0.25 D4:0.5 A3:0.5 C4:2",
+    ]),
+    source: "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1793",
+    credit:
+      "Dvořák · edição Keith OHara, © 2011. Solo do corne inglês, compassos 7–18 do Largo, transposto para Dó; 4/4, 48 BPM. Sem acompanhamento orquestral.",
+    license: "https://creativecommons.org/licenses/by-sa/3.0/",
+  },
+  {
     id: "greensleeves",
     label: "Greensleeves",
     melody: score("Greensleeves", 84, [

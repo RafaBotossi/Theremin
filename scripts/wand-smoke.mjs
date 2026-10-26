@@ -227,6 +227,45 @@ try {
   if (!(await page.locator(".song-camera-cue").textContent()).includes("2/"))
     throw Error("Held pinch advanced through several notes");
   const firstFrequency = await page.evaluate(() => window.manual().frequency);
+  const vibrato = await page.evaluate(async () => {
+    const hand = window.hands[0],
+      center = hand.x;
+    const settings = JSON.parse(localStorage.getItem("air-theremin-settings"));
+    const centsAcross = 1200 * Math.log2(settings.fMax / settings.fMin);
+    const amplitude =
+      ((22 / centsAcross) * (settings.pitchMax - settings.pitchMin)) /
+      settings.sensitivity;
+    const start = performance.now(),
+      frequencies = [];
+    await new Promise((resolve) => {
+      const timer = setInterval(() => {
+        const elapsed = performance.now() - start;
+        hand.x =
+          center + amplitude * Math.sin((elapsed / 1000) * 2 * Math.PI * 5.5);
+        if (elapsed > 700) frequencies.push(window.manual().frequency);
+        if (elapsed > 2000) {
+          clearInterval(timer);
+          hand.x = center;
+          resolve();
+        }
+      }, 33);
+    });
+    const cents = frequencies.map((f) => 1200 * Math.log2(f / 261.625565));
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    const settled = [];
+    for (let i = 0; i < 12; i++) {
+      settled.push(1200 * Math.log2(window.manual().frequency / 261.625565));
+      await new Promise((resolve) => setTimeout(resolve, 33));
+    }
+    return {
+      span: Math.max(...cents) - Math.min(...cents),
+      settledSpan: Math.max(...settled) - Math.min(...settled),
+    };
+  });
+  if (vibrato.span < 5 || vibrato.span > 50 || vibrato.settledSpan > 2)
+    throw Error(`Motion vibrato failed: ${JSON.stringify(vibrato)}`);
+  if (!(await page.locator(".song-camera-cue").textContent()).includes("2/"))
+    throw Error("Vibrato advanced the practice target");
   if (Math.abs(firstFrequency - 261.63) > 5)
     throw Error(`Easy retuned held C: ${firstFrequency}`);
   await page.evaluate(() => {
@@ -255,6 +294,7 @@ try {
     latchedVolume: true,
     recording,
     stepPractice: { firstFrequency, secondFrequency },
+    vibrato,
     errors,
   };
   await writeFile(
@@ -266,4 +306,3 @@ try {
 } finally {
   await browser.close();
 }
-

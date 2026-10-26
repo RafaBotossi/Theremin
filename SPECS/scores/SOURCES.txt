@@ -48,3 +48,23 @@ Row, Row, Row Your Boat: https://en.wikipedia.org/wiki/Row,_Row,_Row_Your_Boat
 Uma exposição, sem cânone; Dó4–Dó5, 4 compassos 12/8.
 Cada beat do código é uma semínima pontuada; 40 BPM, colcheias com duração
 de 1/3 de beat. A duração total é 24 segundos, mantendo a subdivisão ternária.
+
+Temas clássicos adicionados em 2026-10-25, nível Médio:
+
+medium/fur-elise.ly:
+https://www.mutopiaproject.org/ftp/BeethovenLv/WoO59/fur_Elise_WoO59/fur_Elise_WoO59.ly
+Beethoven, Für Elise WoO 59; edição Stelios Samelis, Mutopia-2015/08/18-931,
+domínio público. Extraída a mão direita até o primeiro final, sem repetição
+nem acompanhamento. Valores dobrados (3/8 -> 3/4), semínima = 60 para estudo.
+Anacruse de 1 beat, 7 compassos de 3 beats e final de 2 beats: 24 segundos.
+
+medium/dvorak-woods.notesL.ily e medium/dvorak-header.ily:
+Extraídos de https://www.mutopiaproject.org/ftp/DvorakA/O95/Sym9/Sym9-lys.zip
+Dvořák, Sinfonia nº 9 Op. 95; edição Keith OHara © 2011,
+Mutopia-2011/10/03-1793, CC BY-SA 3.0:
+https://creativecommons.org/licenses/by-sa/3.0/
+A adaptação new-world-largo em src/music/mediumSongs.ts é disponibilizada
+sob a mesma licença. Solo inicial do corne inglês (oboeIImL), compassos
+7–18. Sem a introdução orquestral. Notas escritas transpostas 8 semitons
+abaixo, equivalendo à melodia em som real de Ré bemol transposta para Dó.
+Ritmos preservados, 12 compassos 4/4, semínima = 48: 60 segundos.

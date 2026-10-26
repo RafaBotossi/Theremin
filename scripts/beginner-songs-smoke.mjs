@@ -43,6 +43,8 @@ try {
     "brahms-lullaby",
     "minuet-g",
     "ave-maria",
+    "fur-elise",
+    "new-world-largo",
   ]) {
     if (id === "greensleeves")
       await page.locator(".song-level select").selectOption("medium");

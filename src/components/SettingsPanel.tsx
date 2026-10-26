@@ -151,9 +151,10 @@ export function SettingsPanel({
         {number("sensitivity", "Sensibilidade", 0.5, 2, 0.1)}
         {number("smoothing", "Suavização (segundos)", 0.01, 0.2, 0.005)}
         {number("maxGain", "Ganho máximo (até 0,25)", 0, 0.25, 0.01)}
-        {number("vibrato", "Vibrato acionável (cents)", 0, 50, 1)}
+        {number("vibrato", "Vibrato por movimento (cents)", 0, 50, 1)}
         {number("vibratoRate", "Vibrato (Hz)", 5, 6, 0.1)}
-        {toggle("gestureVibrato", "Acionar vibrato ao abrir o polegar")}
+        {s.controlMode !== "wand" &&
+          toggle("gestureVibrato", "Acionar vibrato ao abrir o polegar")}
         {number("vocalResonance", "Ressonância vocal", 0, 1, 0.05)}
         {number("glide", "Glissando (segundos)", 0.003, 0.15, 0.001)}
         {number("brightness", "Brilho do timbre (0–1)", 0, 1, 0.05)}
