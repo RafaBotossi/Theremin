@@ -9,7 +9,7 @@ export interface Melody {
   notes: SongNote[];
 }
 export interface SongGuide {
-  easyTarget?: number | null;
+  easyTarget?: number | readonly number[] | null;
   listening: boolean;
   attack: number | null;
   active: boolean;

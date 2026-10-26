@@ -19,7 +19,7 @@ import {
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
 import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
-import { easyPitch } from "../music/easyPitch";
+import { easyPitch, type EasyTarget } from "../music/easyPitch";
 const connections = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -32,7 +32,7 @@ export function useHandTracking(
   settings: Settings,
   muted: boolean,
   calibrating: boolean,
-  easyTarget: number | null = null,
+  easyTarget: EasyTarget = null,
 ) {
   const video = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null);

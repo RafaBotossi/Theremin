@@ -174,7 +174,7 @@ try {
   }, nearX);
   await page.waitForTimeout(500);
   await page.waitForFunction(
-    () => Math.abs(window.manual().frequency - 261.625565) < 0.3,
+    () => Math.abs(window.manual().frequency - 293.664768) < 0.3,
   );
   await page.getByRole("button", { name: "Normal", exact: true }).click();
   await page.waitForFunction(() => window.manual().frequency > 270);

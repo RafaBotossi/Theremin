@@ -14,6 +14,7 @@ import {
   type Melody,
   type SongGuide,
 } from "../music/song";
+import { easyWindow } from "../music/easyPitch";
 import { beginnerSongs } from "../music/beginnerSongs";
 import { buildEcstasy } from "../music/ecstasyScore";
 import { useSongPlayback } from "../hooks/useSongPlayback";
@@ -199,7 +200,9 @@ export function SongPanel({
             active: true,
             easyTarget:
               easy && status === "playing" && time >= 0 && !playback.listening
-                ? (frame.current?.midi ?? null)
+                ? practice
+                  ? (frame.current?.midi ?? null)
+                  : easyWindow(notes, time)
                 : null,
             timed: !practice && status !== "done",
             falling:
@@ -415,7 +418,7 @@ export function SongPanel({
           </button>
           <button
             aria-pressed={easy}
-            title="Corrige até três semitons acima ou abaixo do alvo"
+            title="No guia com tempo, aceita até duas notas anteriores ou seguintes da música. Corrige para a mais próxima, até três semitons. Ao acertar para avançar, corrige para o alvo atual."
             onClick={() => {
               setEasy(true);
               match.current = { ...emptyMatch };
