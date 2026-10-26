@@ -3,15 +3,20 @@ import { melody, type StudySong } from "./beginnerSongs";
 // Solo study editions. Note lengths are quarter-note beats; '-' is a rest.
 // Explicit bars preserve pickups, rests and the timing of the source melody.
 function score(name: string, bpm: number, bars: string[]) {
-  return melody(
+  const ties = new Set<number>();
+  let noteIndex = 0;
+  const result = melody(
     name,
     bpm,
     bars.map((bar) =>
       bar.split(" ").map((token) => {
-        const [pitch, length] = token.split(":");
+        const tied = token.endsWith("~");
+        const [pitch, length] = token.replace(/~$/, "").split(":");
         const beats = Number(length ?? 1);
         if (!(beats > 0)) throw Error(`Invalid duration: ${token}`);
         if (pitch === "-") return [null, beats];
+        if (tied) ties.add(noteIndex);
+        noteIndex++;
         const match = /^([A-G])([#b]?)([3-6])$/.exec(pitch);
         if (!match) throw Error(`Invalid note: ${token}`);
         const semitone = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[
@@ -26,6 +31,22 @@ function score(name: string, bpm: number, bars: string[]) {
       }),
     ),
   );
+  const notes: typeof result.notes = [];
+  for (const [i, note] of result.notes.entries()) {
+    const previous = notes.at(-1);
+    if (ties.has(i - 1)) {
+      if (
+        !previous ||
+        previous.midi !== note.midi ||
+        Math.abs(previous.start + previous.duration - note.start) > 1e-7
+      )
+        throw new Error(`Invalid tie in ${name}`);
+      previous.duration += note.duration;
+    } else notes.push({ ...note });
+  }
+  if (ties.has(result.notes.length - 1))
+    throw new Error(`Unfinished tie in ${name}`);
+  return { ...result, notes };
 }
 const greenA = [
   "C5:2 D5",
@@ -52,7 +73,7 @@ export const mediumSongs: StudySong[] = [
   {
     id: "moonlight",
     label: "Moonlight · Sonata ao Luar · Beethoven",
-    melody: score("Moonlight · introdução e primeiro tema", 44, [
+    melody: score("Moonlight · introdução e temas · compassos 1–27", 44, [
       Array(4)
         .fill(`G#3:${1 / 3} C#4:${1 / 3} E4:${1 / 3}`)
         .join(" "),
@@ -65,27 +86,75 @@ export const mediumSongs: StudySong[] = [
       "G#4:3 G#4:0.75 G#4:0.25",
       "G#4:2 A4:2",
       "G#4:2 F#4 B4",
-      "E4",
+      "E4 -:3",
+      "-:3 G4:0.75 G4:0.25",
+      "G4:3 G4:0.75 G4:0.25",
+      "G4:3 F#4",
+      "F#4:2 G4 E4",
+      "F#4:2 F#4:2",
+      "B3 -:2 B4",
+      "C5:3 A#4",
+      "B4:3 B4",
+      "C5:3 A#4",
+      "B4:2 B4:2",
+      "B4:2 A4:2",
+      "G4:2 F#4:2",
+      "C#4:2 C#4 C#4",
+      "F#3 -:2 C#5:0.75 C#5:0.25",
+      "C#5:3 C#5:0.75 C#5:0.25",
+      "C#5:2 C5 C#5",
+      "D#5:3 D#5",
+      "E5:2 D#5 C#5",
     ]),
     source: "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=276",
     credit:
-      "Beethoven · edição Stewart Holmes, © 2007. Primeiro movimento, compassos 1–9: arpejos iniciais, depois melodia superior sem acompanhamento. Dó sustenido menor, semínima = 44; pausa final omitida.",
+      "Beethoven · edição Stewart Holmes, © 2007. Primeiro movimento, compassos 1–27: arpejos iniciais, depois melodia superior sem acompanhamento. Dó sustenido menor, semínima = 44; pausas e ritmos preservados.",
     license: "https://creativecommons.org/licenses/by-sa/2.5/",
     licenseName: "CC BY-SA 2.5",
   },
   {
     id: "gymnopedie-1",
-    label: "Gymnopédie nº 1 · Satie · tema",
-    melody: score("Gymnopédie nº 1 · primeiro tema", 40, [
+    label: "Gymnopédie nº 1 · Satie · versão ampliada",
+    melody: score("Gymnopédie nº 1 · primeira seção · compassos 5–39", 40, [
       "- F#5 A5",
       "G5 F#5 C#5",
       "B4 C#5 D5",
       "A4:3",
-      "F#4:12",
+      "F#4:3~",
+      "F#4:3~",
+      "F#4:3~",
+      "F#4:3",
+      "- F#5 A5",
+      "G5 F#5 C#5",
+      "B4 C#5 D5",
+      "A4:3",
+      "C#5:3",
+      "F#5:3",
+      "E4:3~",
+      "E4:3~",
+      "E4:3",
+      "A4 B4 C5",
+      "E5 D5 B4",
+      "D5 C5 B4",
+      "D5:3~",
+      "D5:2 D5",
+      "E5 F5 G5",
+      "A5 C5 D5",
+      "E5 D5 B4",
+      "D5:3~",
+      "D5:2 D5",
+      "G5:3",
+      "F#5:3",
+      "B4 A4 B4",
+      "C#5 D5 E5",
+      "C#5 D5 E5",
+      "F#4:3",
+      "C5:3",
+      "D5:3",
     ]),
     source: "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=37",
     credit:
-      "Satie · edição Evin Robertson, domínio público. Melodia dos compassos 5–12; sem introdução e acompanhamento. 3/4, semínima = 40. Ligadura final preservada em uma nota longa.",
+      "Satie · edição Evin Robertson, domínio público. Primeira seção, compassos 5–39; sem introdução, acompanhamento ou repetição. 3/4, semínima = 40. Ligaduras preservadas; acordes finais reduzidos à nota superior.",
   },
   {
     id: "fur-elise",
