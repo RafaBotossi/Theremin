@@ -302,7 +302,17 @@ export function SongPanel({
   }
   return (
     <section className="song-panel" aria-label="Escolha de música">
-      <p className="eyebrow">TOQUE UMA MÚSICA</p>
+      <div className="song-heading">
+        <p className="eyebrow">TOQUE UMA MÚSICA</p>
+        <button
+          className="song-advanced-toggle"
+          aria-expanded={advanced}
+          aria-controls="song-advanced"
+          onClick={() => setAdvanced(!advanced)}
+        >
+          Configurações avançadas
+        </button>
+      </div>
       <div className="song-selection">
         <label>
           Música
@@ -513,6 +523,7 @@ export function SongPanel({
               {songSections.map((section) => (
                 <button
                   key={section.measure}
+                  title={`Começar no compasso ${section.measure}`}
                   aria-pressed={selectedSection.measure === section.measure}
                   onClick={() => {
                     reset();
@@ -520,21 +531,12 @@ export function SongPanel({
                   }}
                 >
                   {section.name}
-                  <small>Compasso {section.measure}</small>
                 </button>
               ))}
             </div>
           )}
         </div>
       </div>
-      <button
-        className="song-advanced-toggle"
-        aria-expanded={advanced}
-        aria-controls="song-advanced"
-        onClick={() => setAdvanced(!advanced)}
-      >
-        Configurações avançadas
-      </button>
       <div id="song-advanced" hidden={!advanced}>
         <div className="song-controls">
           <label>

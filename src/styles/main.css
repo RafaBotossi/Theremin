@@ -17,21 +17,33 @@
   min-width: 0;
 }
 .song-section-shortcuts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 4px;
 }
 .instrument-app .song-section-shortcuts button {
   text-align: left;
-  font-size: 11px;
-  padding: 8px 10px;
-}
-.song-section-shortcuts small {
-  display: block;
-  margin-top: 3px;
   font-size: 10px;
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
   color: #9aa9bc;
+}
+.instrument-app .song-section-shortcuts button[aria-pressed="true"] {
+  color: #b5d8cd;
+  border-bottom-color: #518a79;
+}
+.song-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.instrument-app .song-heading .eyebrow {
+  margin: 0;
 }
 .song-selection {
   max-width: 520px;
@@ -98,7 +110,7 @@
   background: transparent;
   border-color: #2b3542;
   padding: 8px 10px;
-  margin: 12px 0;
+  margin: 0 0 0 auto;
 }
 #song-advanced:not([hidden]) {
   padding: 12px 0;
@@ -1404,4 +1416,196 @@ footer {
 .audio-lab output {
   color: #67e8c2;
   font-variant-numeric: tabular-nums;
+}
+/* Keep the instrument and music controls within the available viewport. */
+.instrument-app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 3% 8px;
+  gap: 8px;
+}
+.instrument-app > * {
+  flex-shrink: 0;
+  min-width: 0;
+}
+.instrument-app header {
+  padding: 6px 0;
+}
+.instrument-app .instrument-toolbar {
+  padding: 0;
+}
+.instrument-app .instrument {
+  flex: 1 1 0;
+  min-height: 180px;
+  gap: 12px;
+}
+.instrument-app .stage-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.instrument-app .camera-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+.instrument-app .song-panel {
+  margin: 0;
+  padding: 10px 12px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 16px;
+}
+.song-heading,
+.song-primary-controls,
+.song-status,
+.song-panel > progress,
+.song-panel > .song-controls {
+  grid-column: 1 / -1;
+}
+.instrument-app .song-selection {
+  max-width: none;
+}
+.instrument-app .song-mode-row {
+  margin: 0;
+  gap: 6px;
+}
+.instrument-app .song-segments button {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+.instrument-app .song-transport {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.instrument-app .song-primary-controls {
+  margin: 0;
+  max-width: none;
+  gap: 16px;
+}
+.instrument-app .song-primary-controls input[type="range"] {
+  margin: 2px 0;
+}
+.instrument-app .song-advanced-toggle {
+  border: 0;
+  padding: 4px 0;
+  color: #9aa9bc;
+}
+.instrument-app #song-advanced:not([hidden]) {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: min(640px, 100%);
+  max-height: 70dvh;
+  overflow: auto;
+  z-index: 20;
+  background: #151e2a;
+  border: 1px solid #34404e;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 8px 30px #0008;
+}
+.instrument-app .session-feedback {
+  height: auto;
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .instrument-app {
+    gap: 6px;
+  }
+  .instrument-app header {
+    gap: 6px;
+  }
+  .instrument-app header button {
+    padding: 6px;
+    font-size: 10px;
+  }
+  .instrument-app .instrument {
+    grid-template-rows: minmax(140px, 1fr) auto;
+  }
+  .instrument-app .console {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 10px;
+    padding: 8px;
+  }
+  .instrument-app .console > .eyebrow {
+    display: none;
+  }
+  .instrument-app .console > .presets {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .instrument-app .console > .note {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    padding: 0;
+  }
+  .instrument-app .console > .note > span {
+    font-size: 22px;
+  }
+  .instrument-app .console > .volume-label {
+    grid-column: 1;
+  }
+  .instrument-app .console > meter {
+    grid-column: 1 / -1;
+  }
+  .instrument-app .song-panel {
+    gap: 6px 10px;
+    padding: 8px;
+  }
+  .instrument-app .song-selection,
+  .instrument-app .song-mode-row {
+    grid-column: 1 / -1;
+  }
+  .instrument-app .song-primary-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 10px;
+  }
+  .instrument-app .song-transport button,
+  .instrument-app .instrument-toolbar button {
+    min-height: 32px;
+    padding: 6px 8px;
+  }
+}
+.instrument-app .presets {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.instrument-app .note {
+  height: 32px;
+}
+@media (max-width: 720px) {
+  .instrument-app .console > .presets {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .instrument-app .presets button {
+    padding: 4px 2px;
+    font-size: 9px;
+  }
+  .instrument-app .console > .note {
+    grid-column: 2;
+    grid-row: 2;
+    height: 22px;
+  }
+  .instrument-app .console > .volume-label {
+    align-self: center;
+  }
+  .instrument-app .console select {
+    padding: 5px;
+    font-size: 10px;
+  }
+  .instrument-app .song-panel label {
+    font-size: 10px;
+  }
+  .instrument-app .song-mode-row {
+    gap: 4px;
+  }
+  .instrument-app .song-segments button {
+    padding: 6px;
+    font-size: 10px;
+  }
 }
