@@ -14,6 +14,7 @@ import {
   type Melody,
   type SongGuide,
 } from "../music/song";
+import { beginnerSongs } from "../music/beginnerSongs";
 import { buildEcstasy } from "../music/ecstasyScore";
 import { useSongPlayback } from "../hooks/useSongPlayback";
 import { emptyMatch, matchNote } from "../music/noteMatch";
@@ -70,12 +71,13 @@ export function SongPanel({
   const match = useRef({ ...emptyMatch });
   const generation = useRef(0),
     wasRunning = useRef(running);
+  const beginnerSong = beginnerSongs.find((song) => song.id === choice);
   const melody =
     choice === "ecstasy"
       ? scoreMelody
       : choice === "demo"
         ? demoMelody
-        : tracks[track];
+        : (beginnerSong?.melody ?? tracks[track]);
   const notes = useMemo(() => {
     const offset =
       choice !== "ecstasy" && startNote > 0
@@ -329,6 +331,13 @@ export function SongPanel({
             <option value="ecstasy">
               The Ecstasy of Gold · partitura (solo)
             </option>
+            <optgroup label="Para começar">
+              {beginnerSongs.map((song) => (
+                <option key={song.id} value={song.id}>
+                  {song.label}
+                </option>
+              ))}
+            </optgroup>
             <option value="demo">Exercício original · demonstração</option>
             <option value="midi">Meu arquivo MIDI</option>
           </select>
@@ -538,6 +547,23 @@ export function SongPanel({
         </div>
       </div>
       <div id="song-advanced" hidden={!advanced}>
+        {beginnerSong && (
+          <p className="song-source">
+            {beginnerSong.credit}{" "}
+            <a href={beginnerSong.source} target="_blank" rel="noreferrer">
+              Partitura e fonte
+            </a>
+            {beginnerSong.license && (
+              <>
+                {" "}
+                ·{" "}
+                <a href={beginnerSong.license} target="_blank" rel="noreferrer">
+                  CC BY-SA 3.0
+                </a>
+              </>
+            )}
+          </p>
+        )}
         <div className="song-controls">
           <label>
             Transpor

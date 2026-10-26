@@ -1,0 +1,30 @@
+Fontes baixadas em 2026-10-25 do Mutopia Project.
+
+ode.ly: https://www.mutopiaproject.org/ftp/BeethovenLv/ode/ode.ly
+Beethoven, Ode to Joy; edição Peter Chubb, Mutopia-2009/08/05-528.
+Domínio público segundo a edição. Extraída a voz soprano, transposta
+7 semitons abaixo (Sol -> Dó). Ritmo e 16 compassos preservados.
+Andamento de estudo: semínima = 60 (original 100).
+
+mozart.zip: https://www.mutopiaproject.org/ftp/MozartWA/KV265/guitar-duo-complete/guitar-duo-complete-lys.zip
+Ah Vous Dirai-Je Maman, Mozart; edição J. J. Olson,
+Mutopia-2018/12/07-2236. Domínio público segundo a edição.
+Usado o tema (themaA), não as variações. Redução didática para a melodia
+tradicional: notas Sol repetidas dos compassos 4/20 unidas, ornamentos
+nos compassos 7/23 removidos, fechamento dos compassos 15/16 simplificado
+para Mi Mi | Ré (mínima). 24 compassos 2/4, Dó4–Lá4, semínima = 60.
+
+amazing-grace.ly: https://www.mutopiaproject.org/ftp/Traditional/amazing-mutopia/amazing-mutopia.ly
+Amazing Grace, tradicional, arranjo/edição Breizh Partitions, © 2012.
+Mutopia-2012/02/12-1832. Licença CC BY-SA 3.0:
+https://creativecommons.org/licenses/by-sa/3.0/
+A adaptação dos dados de Amazing Grace em src/music/beginnerSongs.ts
+é disponibilizada sob a mesma licença CC BY-SA 3.0.
+Removidas apenas as notas de graça da gaita; mantidas notas principais,
+ritmos pontuados, anacruse e final incompleto. Transposta Mi bemol -> Dó,
+registro Sol3–Sol4; ignorada a oitava da clave de gaita.
+9/8 em três pulsações por compasso; semínima pontuada = 48, escolha de estudo.
+
+Todas as melodias são solo, sem acompanhamento, sintetizadas pelo motor
+existente. Velocidade do guia e reprodução aplicam-se aos tempos-base acima.
+Os arquivos-fonte estão arquivados aqui; o site não precisa baixá-los em execução.
