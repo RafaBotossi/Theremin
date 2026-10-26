@@ -3,7 +3,7 @@ import type { Hand, Settings } from "../types/theremin";
 import { fingerOpenness } from "./fingerOpenness";
 import { indexExtension } from "./indexExtension";
 import { thumbVibrato } from "./thumbVibrato";
-import { pinchRatio } from "./pinchTouch";
+import { measuredPinch } from "./pinchTouch";
 import { openPalm } from "./openPalm";
 export class HandTracker {
   private model: HandLandmarker;
@@ -51,9 +51,9 @@ export class HandTracker {
       };
       const aspect = video.videoHeight / (video.videoWidth || 1);
       return {
-        pinchRatio: pinchRatio(
-          result.worldLandmarks?.[i] ??
-            points.map((p) => ({ x: p.x, y: p.y * aspect, z: p.z })),
+        pinchRatio: measuredPinch(
+          result.worldLandmarks?.[i],
+          points.map((p) => ({ x: p.x, y: p.y * aspect, z: p.z })),
         ),
         point,
         label: result.handedness[i]?.[0]?.categoryName ?? "",
