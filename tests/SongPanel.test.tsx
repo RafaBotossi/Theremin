@@ -148,6 +148,68 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
 });
+it("shows a perfect result after the final practice note and clears it on restart", () => {
+  const props = {
+    settings: defaults,
+    blocked: false,
+    running: true,
+    onGuide: vi.fn(),
+    onSettings: vi.fn(),
+  };
+  const view = render(<SongPanel {...props} reading={emptyReading} />);
+  fireEvent.change(screen.getByLabelText("Música"), {
+    target: { value: "demo" },
+  });
+  fireEvent.change(screen.getByLabelText("Começar em"), {
+    target: { value: "7" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Acertar para avançar" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
+  for (let i = 0; i < 5; i++) {
+    act(() => vi.advanceTimersByTime(100));
+    view.rerender(
+      <SongPanel
+        {...props}
+        reading={{
+          ...emptyReading,
+          pitch: true,
+          volume: true,
+          gain: 0.1,
+          frequency: 440 * 2 ** ((60 - 69) / 12),
+          attack: 1,
+        }}
+      />,
+    );
+  }
+  expect(screen.getByText(/Excelente!/)).toBeVisible();
+  expect(screen.getByText(/100% de acerto/)).toHaveTextContent(
+    "1 acerto · 0 erros",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Fechar resultado" }));
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
+  expect(screen.queryByText(/Excelente!/)).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Pontuação")).toHaveTextContent("0 acertos");
+});
+it("does not grade a camera-free preview", () => {
+  render(
+    <SongPanel
+      settings={defaults}
+      blocked={false}
+      running={false}
+      onGuide={vi.fn()}
+      onSettings={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("Música"), {
+    target: { value: "demo" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
+  act(() => vi.advanceTimersByTime(20000));
+  expect(screen.queryByLabelText("Pontuação")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Fechar resultado" }),
+  ).not.toBeInTheDocument();
+});
 it("conta três segundos, destaca notas, pausa e encerra o guia", () => {
   const onGuide = vi.fn(),
     onSettings = vi.fn();
@@ -194,13 +256,17 @@ it("conclui sem repetir e pausa ao mutar", () => {
       onSettings={onSettings}
     />,
   );
-  fireEvent.click(screen.getByLabelText("Repetir trecho"));
+  expect(screen.getByLabelText("Repetir trecho")).not.toBeChecked();
   fireEvent.change(screen.getByLabelText("Música"), {
     target: { value: "demo" },
   });
   fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   act(() => vi.advanceTimersByTime(14000));
   expect(onGuide.mock.lastCall?.[0].cue).toBe("Trecho concluído");
+  expect(screen.getByText(/Ainda precisa praticar/)).toBeVisible();
+  expect(screen.getByText(/0% de acerto/)).toHaveTextContent(
+    "0 acertos · 8 erros",
+  );
   fireEvent.click(screen.getByRole("button", { name: "INICIAR" }));
   view.rerender(
     <SongPanel

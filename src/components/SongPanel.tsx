@@ -20,6 +20,7 @@ import { beginnerSongs } from "../music/beginnerSongs";
 import { buildEcstasy } from "../music/ecstasyScore";
 import { useSongPlayback } from "../hooks/useSongPlayback";
 import { emptyMatch, matchNote } from "../music/noteMatch";
+import { SongScore } from "../music/songScore";
 const songSections = [
   { name: "Início", measure: 1 },
   { name: "Tema principal", measure: 12 },
@@ -63,7 +64,13 @@ export function SongPanel({
     [bpm, startMeasure, fermata],
   );
   const [transpose, setTranspose] = useState(0);
-  const [loop, setLoop] = useState(true);
+  const [loop, setLoop] = useState(false);
+  const score = useRef(new SongScore());
+  const [scoring, setScoring] = useState(false);
+  const [counts, setCounts] = useState({ hits: 0, errors: 0 });
+  const [result, setResult] = useState<ReturnType<SongScore["finish"]> | null>(
+    null,
+  );
   const [status, setStatus] = useState<"idle" | "playing" | "paused" | "done">(
     "idle",
   );
@@ -134,7 +141,12 @@ export function SongPanel({
 
   useEffect(() => {
     if (!practice || status !== "playing" || !notes[noteIndex]) {
-      match.current = { ...emptyMatch, release: match.current.release };
+      match.current = {
+        ...emptyMatch,
+        release: match.current.release,
+        attack: match.current.attack,
+      };
+      if (practice) score.current.pause();
       return;
     }
     const next = matchNote(
@@ -145,8 +157,23 @@ export function SongPanel({
       running && !blocked && !document.hidden,
     );
     match.current = next;
+    if (scoring && running && !blocked && !document.hidden) {
+      score.current.practice(
+        reading,
+        noteIndex,
+        notes[noteIndex].midi,
+        next.passed,
+        !next.release,
+        performance.now(),
+      );
+      setCounts({ hits: score.current.hits, errors: score.current.errors });
+    } else score.current.pause();
     if (!next.passed) return;
     const nextIndex = noteIndex + 1;
+    if (nextIndex >= notes.length && scoring) {
+      setResult(score.current.finish(notes.length, false));
+      if (loop) score.current = new SongScore();
+    }
     if (nextIndex >= notes.length && !loop) {
       setStatus("done");
       return;
@@ -158,7 +185,17 @@ export function SongPanel({
       attack: reading.attack,
     };
     setNoteIndex(index);
-  }, [reading, practice, status, noteIndex, notes, running, blocked, loop]);
+  }, [
+    reading,
+    practice,
+    status,
+    noteIndex,
+    notes,
+    running,
+    blocked,
+    loop,
+    scoring,
+  ]);
 
   useEffect(() => {
     if (practice || status !== "playing" || blocked || speed === 0) return;
@@ -170,7 +207,6 @@ export function SongPanel({
       setTime((old) => {
         const next = advanceSongTime(old, delta, speed);
         if (next >= duration) {
-          if (loop) return -3;
           return duration;
         }
         return next;
@@ -179,9 +215,45 @@ export function SongPanel({
     return () => clearInterval(timer);
   }, [status, blocked, speed, duration, loop, practice]);
   useEffect(() => {
-    if (!practice && status === "playing" && time >= duration && !loop)
-      setStatus("done");
-  }, [time, duration, loop, status, practice]);
+    if (practice || status !== "playing") return;
+    if (
+      scoring &&
+      running &&
+      !blocked &&
+      !playback.listening &&
+      !document.hidden &&
+      speed > 0 &&
+      time >= 0
+    ) {
+      score.current.timed(notes, time, reading, performance.now(), easy, speed);
+      setCounts({ hits: score.current.hits, errors: score.current.errors });
+    } else score.current.pause();
+    if (time >= duration) {
+      if (scoring) {
+        const summary = score.current.finish(notes.length, true);
+        setCounts({ hits: summary.hits, errors: summary.errors });
+        setResult(summary);
+      }
+      if (loop) {
+        score.current = new SongScore();
+        setTime(-3);
+      } else setStatus("done");
+    }
+  }, [
+    time,
+    duration,
+    loop,
+    status,
+    practice,
+    scoring,
+    running,
+    blocked,
+    playback.listening,
+    speed,
+    reading,
+    notes,
+    easy,
+  ]);
   useEffect(() => {
     if (status === "done") playback.stop();
   }, [status, playback.stop]);
@@ -259,6 +331,10 @@ export function SongPanel({
     [],
   );
   function reset() {
+    score.current = new SongScore();
+    setCounts({ hits: 0, errors: 0 });
+    setResult(null);
+    setScoring(false);
     playback.stop();
     setStatus("idle");
     setTime(-3);
@@ -287,7 +363,7 @@ export function SongPanel({
         );
     }
   }
-  function start(byNote = practice) {
+  function start(byNote = practice, evaluate = running) {
     if (!notes.length || polyphonic || outOfRange || blocked) return;
     const frequencies = notes.map((n) => midiFrequency(n.midi));
     onSettings({
@@ -302,6 +378,10 @@ export function SongPanel({
     });
     setPractice(byNote);
     if (status !== "paused" || byNote !== practice) {
+      score.current = new SongScore();
+      setCounts({ hits: 0, errors: 0 });
+      setResult(null);
+      setScoring(evaluate);
       setTime(byNote || speed === 0 ? 0 : -3);
       setNoteIndex(0);
       match.current = { ...emptyMatch };
@@ -470,6 +550,16 @@ export function SongPanel({
             Acertar para avançar
           </button>
         </div>
+        {scoring && (
+          <span
+            className="song-score"
+            aria-label="Pontuação"
+            title="No guia com tempo, cada nota conta uma vez. Ao avançar por acerto, cada tentativa errada sustentada conta uma vez por pinça."
+          >
+            ✓ {counts.hits} {counts.hits === 1 ? "acerto" : "acertos"} · ✕{" "}
+            {counts.errors} {counts.errors === 1 ? "erro" : "erros"}
+          </span>
+        )}
       </div>
       <div className="song-transport">
         <button
@@ -480,7 +570,10 @@ export function SongPanel({
               return;
             }
             void playback.listen().then((ok) => {
-              if (ok) start(false);
+              if (ok) {
+                setScoring(false);
+                start(false, false);
+              }
             });
           }}
         >
@@ -508,6 +601,17 @@ export function SongPanel({
           PARAR
         </button>
       </div>
+      {result && (
+        <div className="song-result" role="status">
+          <strong>{result.message}</strong>
+          <span>
+            {result.accuracy}% de acerto · {result.hits}{" "}
+            {result.hits === 1 ? "acerto" : "acertos"} · {result.errors}{" "}
+            {result.errors === 1 ? "erro" : "erros"}
+          </span>
+          <button onClick={() => setResult(null)}>Fechar resultado</button>
+        </div>
+      )}
       <div className="song-primary-controls">
         <div className="speed-control">
           <label>

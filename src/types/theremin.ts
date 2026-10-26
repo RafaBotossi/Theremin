@@ -14,6 +14,7 @@ export interface Hand {
   vibratoExpression?: number;
 }
 export interface Settings {
+  backgroundDefaultsVersion: number;
   musicalBackground: boolean;
   handLayoutVersion: number;
   controlMode: "antennas" | "screen" | "wand";
@@ -55,7 +56,8 @@ export interface Settings {
   delay: number;
 }
 export const defaults: Settings = {
-  musicalBackground: false,
+  backgroundDefaultsVersion: 1,
+  musicalBackground: true,
   handLayoutVersion: 4,
   controlMode: "wand",
   antennaX: 0.9,
@@ -158,6 +160,12 @@ export function loadSettings(): Settings {
     const stored = localStorage.getItem("air-theremin-settings");
     if (!stored) return { ...defaults };
     const saved = JSON.parse(stored);
+    if (
+      saved.backgroundDefaultsVersion !== defaults.backgroundDefaultsVersion
+    ) {
+      saved.musicalBackground = true;
+      saved.backgroundDefaultsVersion = defaults.backgroundDefaultsVersion;
+    }
     // Introduce antenna practice without discarding the user's selected scale.
     if (saved.controlMode === undefined) {
       Object.assign(saved, {

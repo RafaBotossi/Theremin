@@ -1,4 +1,4 @@
-﻿import { chromium } from "@playwright/test";
+import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 const browser = await chromium.launch({
   channel: "chrome",
@@ -62,7 +62,12 @@ try {
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
   await page.locator(".camera-stage.live").waitFor();
   if (process.env.TEST_BACKGROUND) {
-    await page.getByRole("button", { name: "♫ Fundo", exact: true }).click();
+    if (
+      (await page
+        .getByRole("button", { name: "♫ Fundo", exact: true })
+        .getAttribute("aria-pressed")) !== "true"
+    )
+      await page.getByRole("button", { name: "♫ Fundo", exact: true }).click();
     await page
       .locator('canvas[data-musical-background][data-ready="true"]')
       .waitFor();
@@ -290,6 +295,61 @@ try {
     throw Error(`Fresh pinch did not play D: ${secondFrequency}`);
   if (!(await page.locator(".song-camera-cue").textContent()).includes("3/"))
     throw Error("Second pinch advanced more than one note");
+  // One deliberate wrong attempt, then complete the remaining notes.
+  await page.evaluate(() => {
+    window.hands[0].pinch = 0.8;
+  });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => {
+    window.hands[0].x = 0.85;
+    window.hands[0].pinch = 0.1;
+  });
+  await page.waitForFunction(() =>
+    document.querySelector(".song-score")?.textContent.includes("1 erro"),
+  );
+  await page.waitForTimeout(500);
+  if (!(await page.locator(".song-score").textContent()).includes("1 erro"))
+    throw Error("One held mistake counted repeatedly");
+  for (let index = 2; index < 8; index++) {
+    await page.evaluate(() => {
+      window.hands[0].pinch = 0.8;
+    });
+    await page.waitForTimeout(200);
+    const x = await page
+      .locator(".song-target")
+      .evaluate((el) => parseFloat(el.style.left) / 100);
+    await page.evaluate((x) => {
+      window.hands[0].x = x;
+      window.hands[0].pinch = 0.1;
+    }, x);
+    if (index === 7) await page.locator(".song-result").waitFor();
+    else
+      await page.waitForFunction(
+        (next) =>
+          document
+            .querySelector(".song-camera-cue")
+            ?.textContent.includes(`${next}/`),
+        index + 2,
+      );
+  }
+  const resultText = await page.locator(".song-result").textContent();
+  if (
+    !resultText.includes("8 acertos") ||
+    !resultText.includes("1 erro") ||
+    !resultText.includes("Bom trabalho")
+  )
+    throw Error(`Incorrect final score: ${resultText}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollHeight > innerHeight ||
+        document.documentElement.scrollWidth > innerWidth,
+    )
+  )
+    throw Error("Score causes mobile overflow");
+  await page.screenshot({ path: "test-results/score-mobile.png" });
+  await page.setViewportSize({ width: 1440, height: 1100 });
   await mkdir("test-results", { recursive: true });
   await page.screenshot({ path: "test-results/pinch-touch-desktop.png" });
   const report = {
@@ -301,6 +361,7 @@ try {
     recording,
     stepPractice: { firstFrequency, secondFrequency },
     vibrato,
+    resultText,
     errors,
   };
   await writeFile(

@@ -37,7 +37,12 @@ try {
   await page.goto(process.env.TEST_URL || "http://localhost:5173/");
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
   await page.locator(".camera-stage.live").waitFor();
-  await page.getByRole("button", { name: "♫ Fundo", exact: true }).click();
+  if (
+    (await page
+      .getByRole("button", { name: "♫ Fundo", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    throw Error("Background is not enabled by default");
   const background = page.locator(
     'canvas[data-musical-background][data-ready="true"]',
   );
