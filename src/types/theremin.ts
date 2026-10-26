@@ -7,7 +7,7 @@ export interface Hand {
   label: string;
   score: number;
   landmarks: Point[];
-  approach?: number;
+  pinchRatio?: number;
   openness?: number;
   palmOpen?: boolean;
   indexExtension?: number;

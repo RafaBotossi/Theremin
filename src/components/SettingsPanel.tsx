@@ -176,7 +176,7 @@ export function SettingsPanel({
       </div>
       <p>
         {s.controlMode === "wand"
-          ? "Aproxime qualquer indicador da câmera para tocar; recue para silenciar. Ao mostrar a mão, aguarde um instante para definir a distância de repouso. Qualquer palma aberta ajusta o volume. Mantenha a altura por 0,6 s para fixar; feche e abra a palma para ajustar novamente. O valor fica salvo neste navegador."
+          ? "Junte polegar e indicador de qualquer mão para tocar; abra a pinça para silenciar. Qualquer palma aberta ajusta o volume. Mantenha a altura por 0,6 s para fixar; feche e abra a palma para ajustar novamente. O valor fica salvo neste navegador."
           : s.pitchLeft
             ? "Mão esquerda: nota. Mão direita: volume."
             : "Mão direita: nota. Mão esquerda: volume."}{" "}

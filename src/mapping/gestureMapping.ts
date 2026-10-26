@@ -1,6 +1,6 @@
 import type { Hand, Settings } from "../types/theremin";
 import { hasOpenPalm } from "../vision/openPalm";
-import { selectOpenPalm } from "../vision/depthTouch";
+import { selectOpenPalm } from "../vision/pinchTouch";
 export const clamp = (n: number, min = 0, max = 1) =>
   Math.max(min, Math.min(max, n));
 export function normalized(

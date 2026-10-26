@@ -1,24 +1,36 @@
 import type { Hand } from "../types/theremin";
 import { hasOpenPalm } from "./openPalm";
 
-// A monocular camera estimates approach, not absolute distance in centimeters.
-// Apparent palm size catches whole-hand motion; relative tip z catches a poke.
-export function approachSignal(hand: Hand) {
-  if (hand.approach !== undefined) return hand.approach;
-  return NaN;
+// Normalize fingertip separation by palm length: independent of distance/size.
+export function pinchRatio(points: { x: number; y: number; z?: number }[]) {
+  if (
+    [0, 4, 8, 9].some(
+      (i) =>
+        !points[i] ||
+        ![points[i].x, points[i].y, points[i].z ?? 0].every(Number.isFinite),
+    )
+  )
+    return Infinity;
+  const distance = (a: number, b: number) =>
+    Math.hypot(
+      points[a].x - points[b].x,
+      points[a].y - points[b].y,
+      (points[a].z ?? 0) - (points[b].z ?? 0),
+    );
+  const palm = distance(0, 9);
+  return palm > 1e-6 ? distance(4, 8) / palm : Infinity;
+}
+function separation(hand: Hand) {
+  return hand.pinchRatio ?? pinchRatio(hand.landmarks);
 }
 interface Track {
   hand: Hand;
   seen: number;
-  born: number;
-  base: number;
-  value: number;
-  peak: number;
   pressed: boolean;
   changed: number;
   pending: number | null;
 }
-export class DepthTouch {
+export class PinchTouch {
   private tracks: Track[] = [];
   attack = 0;
   reset() {
@@ -28,8 +40,8 @@ export class DepthTouch {
     const available = this.tracks.filter((t) => now - t.seen <= 150);
     const next: Track[] = [];
     for (const hand of hands) {
-      const signal = approachSignal(hand);
-      if (!Number.isFinite(signal) || signal <= 0) continue;
+      const signal = separation(hand);
+      if (!Number.isFinite(signal) || signal < 0) continue;
       const distance = (t: Track) =>
         Math.hypot(
           hand.point.x - t.hand.point.x,
@@ -44,42 +56,26 @@ export class DepthTouch {
       const t = track ?? {
         hand,
         seen: now,
-        born: now,
-        base: signal,
-        value: signal,
-        peak: signal,
         pressed: false,
         changed: 0,
         pending: null,
       };
-      const dt = Math.max(0, now - t.seen);
-      t.value += (signal - t.value) * (1 - Math.exp(-dt / 40));
       t.hand = hand;
       t.seen = now;
-      if (hasOpenPalm(hand) || now - t.born < 250) {
-        t.base = t.value;
-        t.peak = t.value;
+      // Different close/open thresholds prevent chatter near the touch point.
+      // Release immediately; audio gain still ramps smoothly in the engine.
+      if (signal >= 0.45) {
         t.pressed = false;
         t.pending = null;
-      } else {
-        if (t.pressed) t.peak = Math.max(t.peak, t.value);
-        const wantsChange = t.pressed
-          ? t.value < t.base * 1.05 || t.value < t.peak * 0.9
-          : t.value > t.base * 1.12;
-        if (wantsChange) {
-          t.pending ??= now;
-          if (now - t.pending >= 45) {
-            t.pressed = !t.pressed;
-            t.changed = now;
-            t.pending = null;
-            if (t.pressed) {
-              t.peak = t.value;
-              this.attack++;
-            } else t.base = t.value;
-          }
-        } else t.pending = null;
-        if (!t.pressed && t.value < t.base) t.base = t.value;
-      }
+      } else if (!t.pressed && signal <= 0.28) {
+        t.pending ??= now;
+        if (now - t.pending >= 30) {
+          t.pressed = true;
+          t.changed = now;
+          t.pending = null;
+          this.attack++;
+        }
+      } else if (!t.pressed) t.pending = null;
       next.push(t);
     }
     this.tracks = next;
@@ -91,7 +87,7 @@ export class DepthTouch {
 }
 
 export function selectOpenPalm(hands: Hand[], previous?: Hand) {
-  const palms = hands.filter(hasOpenPalm);
+  const palms = hands.filter((h) => hasOpenPalm(h) && separation(h) > 0.45);
   if (!previous) return palms[0];
   return palms.sort(
     (a, b) =>

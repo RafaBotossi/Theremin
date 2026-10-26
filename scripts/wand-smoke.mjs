@@ -18,13 +18,13 @@ try {
   await page.addInitScript(() => {
     localStorage.clear();
     window.hands = [
-      { x: 0.5, y: 0.5, label: "Left", straight: true, depth: 1 },
+      { x: 0.5, y: 0.5, label: "Left", straight: true, pinch: 0.8 },
       {
         x: 0.8,
         y: 0.5,
         label: "Right",
         straight: true,
-        depth: 1,
+        pinch: 0.8,
         palmOpen: true,
       },
     ];
@@ -45,7 +45,7 @@ try {
   await page.route("**/src/vision/HandTracker.ts*", (route) =>
     route.fulfill({
       contentType: "application/javascript",
-      body: `export class HandTracker {delegate='SIMULATED';static async create(){return new HandTracker()}close(){}detect(){return window.hands.map(h=>{const p=Array.from({length:21},()=>({x:h.x+.1,y:h.y+.2}));for(let i=5;i<=8;i++)p[i]={x:h.x,y:h.y+(8-i)*.04};if(!h.straight)p[8]={...p[6]};return {point:{x:h.x,y:h.y},landmarks:p,label:h.label,score:1,approach:h.depth,palmOpen:h.palmOpen};});}}`,
+      body: `export class HandTracker {delegate='SIMULATED';static async create(){return new HandTracker()}close(){}detect(){return window.hands.map(h=>{const p=Array.from({length:21},()=>({x:h.x+.1,y:h.y+.2}));for(let i=5;i<=8;i++)p[i]={x:h.x,y:h.y+(8-i)*.04};if(!h.straight)p[8]={...p[6]};return {point:{x:h.x,y:h.y},landmarks:p,label:h.label,score:1,pinchRatio:h.pinch,palmOpen:h.palmOpen};});}}`,
     }),
   );
   await page.goto(process.env.TEST_URL || "http://127.0.0.1:5174/");
@@ -86,9 +86,9 @@ try {
 
   await page.waitForTimeout(500);
   if ((await page.evaluate(() => window.level())) > 0.001)
-    throw Error("Neutral hand played before approach");
+    throw Error("Neutral hand played before pinch");
   await page.evaluate(() => {
-    window.hands[0].depth = 1.3;
+    window.hands[0].pinch = 0.1;
   });
   await page.waitForFunction(() => window.level() > 0.001);
   const held = await page.locator("meter").evaluate((e) => e.value);
@@ -102,7 +102,7 @@ try {
   )
     throw Error("Volume drifted");
   await page.evaluate(() => {
-    window.hands[0].depth = 1;
+    window.hands[0].pinch = 0.8;
   });
   await page.waitForFunction(() => window.level() < 0.0001);
   await page.evaluate((h) => {
@@ -111,7 +111,7 @@ try {
   }, palm);
   await page.waitForTimeout(500);
   await page.evaluate(() => {
-    window.hands[1].depth = 1.3;
+    window.hands[1].pinch = 0.1;
   });
   await page.waitForFunction(() => window.level() > 0.001);
   await page.evaluate(() => window.hands.reverse());
@@ -119,7 +119,7 @@ try {
   if ((await page.evaluate(() => window.level())) < 0.001)
     throw Error("Detector reorder muted active finger");
   await page.evaluate(() => {
-    window.hands[0].depth = 1;
+    window.hands[0].pinch = 0.8;
   });
   await page.waitForFunction(() => window.level() < 0.0001);
   // The other palm can now set volume; no left/right assignment is used.
@@ -147,10 +147,10 @@ try {
   if (await page.locator(".hand-swap").count())
     throw Error("Hand inversion still visible");
   await mkdir("test-results", { recursive: true });
-  await page.screenshot({ path: "test-results/depth-touch-desktop.png" });
+  await page.screenshot({ path: "test-results/pinch-touch-desktop.png" });
   const report = {
-    approachPlays: true,
-    retreatSilences: true,
+    pinchPlays: true,
+    openingSilences: true,
     eitherIndex: true,
     eitherPalm: true,
     latchedVolume: true,

@@ -3,6 +3,7 @@ import type { Hand, Settings } from "../types/theremin";
 import { fingerOpenness } from "./fingerOpenness";
 import { indexExtension } from "./indexExtension";
 import { thumbVibrato } from "./thumbVibrato";
+import { pinchRatio } from "./pinchTouch";
 import { openPalm } from "./openPalm";
 export class HandTracker {
   private model: HandLandmarker;
@@ -49,16 +50,11 @@ export class HandTracker {
         y: ids.reduce((a, id) => a + points[id].y, 0) / ids.length,
       };
       const aspect = video.videoHeight / (video.videoWidth || 1);
-      const span = Math.max(
-        ...[5, 9, 17].map((id) =>
-          Math.hypot(
-            points[id].x - points[0].x,
-            (points[id].y - points[0].y) * aspect,
-          ),
-        ),
-      );
       return {
-        approach: Math.max(0.001, span - (points[8].z - points[0].z) * 0.6),
+        pinchRatio: pinchRatio(
+          result.worldLandmarks?.[i] ??
+            points.map((p) => ({ x: p.x, y: p.y * aspect, z: p.z })),
+        ),
         point,
         label: result.handedness[i]?.[0]?.categoryName ?? "",
         score: result.handedness[i]?.[0]?.score ?? 0,

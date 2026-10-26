@@ -130,7 +130,7 @@ export function SongPanel({
             ? `Prepare as mãos · ${Math.ceil(-time)}`
             : frame.current
               ? `Agora ${noteName(midiFrequency(frame.current.midi))}${frame.current.measure ? ` · compasso ${frame.current.measure}` : ""}`
-              : "Pausa · recue o indicador";
+              : "Pausa · abra a pinça";
 
   useEffect(() => {
     if (!practice || status !== "playing" || !notes[noteIndex]) {

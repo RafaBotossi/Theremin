@@ -18,7 +18,7 @@ import {
 } from "../mapping/gestureMapping";
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
-import { DepthTouch, selectOpenPalm } from "../vision/depthTouch";
+import { PinchTouch, selectOpenPalm } from "../vision/pinchTouch";
 import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
 import { easyPitch, type EasyTarget } from "../music/easyPitch";
 const connections = [
@@ -147,7 +147,7 @@ export function useHandTracking(
       let expression = current.current.settings.brightness;
       let wand: Hand | undefined;
       let volumeHand: Hand | undefined;
-      const depthTouch = new DepthTouch();
+      const pinchTouch = new PinchTouch();
       const volumeLatch = new VolumeLatch(loadVolume());
       let heldVolume = volumeLatch.value;
       timer = window.setInterval(() => {
@@ -160,7 +160,7 @@ export function useHandTracking(
           const stale = document.hidden || now - frameTime.current > 150;
           if (stale) {
             hands.current = [];
-            depthTouch.reset();
+            pinchTouch.reset();
           }
           setReading((r) => ({
             ...r,
@@ -211,7 +211,7 @@ export function useHandTracking(
           const roles =
             s.controlMode === "wand"
               ? {
-                  pitch: depthTouch.update(found, detectedAt),
+                  pitch: pinchTouch.update(found, detectedAt),
                   volume: volumeHand,
                 }
               : selectHands(found, s, wand);
@@ -332,7 +332,7 @@ export function useHandTracking(
                           ? "VOLUME FIXADO"
                           : "VOLUME · PALMA ABERTA"
                         : "VOLUME MANTIDO"
-                      : "APROXIME PARA TOCAR"
+                      : "FECHE A PINÇA PARA TOCAR"
                   : h === roles.pitch
                     ? "PITCH"
                     : h === roles.volume
@@ -352,7 +352,7 @@ export function useHandTracking(
           if (now - lastUI > 100) {
             lastUI = now;
             setReading({
-              attack: s.controlMode === "wand" ? depthTouch.attack : undefined,
+              attack: s.controlMode === "wand" ? pinchTouch.attack : undefined,
               frequency,
               gain,
               volumeLevel: heldVolume,

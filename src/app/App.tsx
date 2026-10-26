@@ -237,9 +237,7 @@ export function App() {
                 >
                   {settings.controlMode === "wand" ? (
                     <>
-                      <span>
-                        INDICADOR: APROXIME · TOQUE / RECUE · SILÊNCIO
-                      </span>
+                      <span>PINÇA FECHADA · TOQUE / ABERTA · SILÊNCIO</span>
                       <span>QUALQUER PALMA ↕ VOLUME</span>
                     </>
                   ) : (
