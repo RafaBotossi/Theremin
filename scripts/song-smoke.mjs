@@ -16,6 +16,7 @@ try {
       external.push(r.url());
   });
   await page.goto("http://localhost:5173/");
+  await page.locator(".song-level select").selectOption("hard");
   await page
     .getByRole("combobox", { name: "Música", exact: true })
     .selectOption("ecstasy");

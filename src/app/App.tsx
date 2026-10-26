@@ -238,13 +238,9 @@ export function App() {
                   {settings.controlMode === "wand" ? (
                     <>
                       <span>
-                        INDICADOR {settings.pitchLeft ? "ESQUERDO" : "DIREITO"}{" "}
-                        ↔ NOTA
+                        INDICADOR: APROXIME · TOQUE / RECUE · SILÊNCIO
                       </span>
-                      <span>
-                        PALMA {settings.pitchLeft ? "DIREITA" : "ESQUERDA"} ↕
-                        VOLUME
-                      </span>
+                      <span>QUALQUER PALMA ↕ VOLUME</span>
                     </>
                   ) : (
                     <>
@@ -320,16 +316,6 @@ export function App() {
               </button>
             ))}
           </div>
-          <label className="hand-swap">
-            <input
-              type="checkbox"
-              checked={!settings.pitchLeft}
-              onChange={(e) =>
-                update({ ...settings, pitchLeft: !e.target.checked })
-              }
-            />
-            Inverter mãos
-          </label>
           <div className="volume-label">
             <span>VOLUME</span>
             <span>{Math.round(volume * 100)}%</span>

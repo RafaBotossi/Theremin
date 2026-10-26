@@ -1,5 +1,6 @@
 import type { Hand, Settings } from "../types/theremin";
-import { selectWand } from "../vision/indexExtension";
+import { hasOpenPalm } from "../vision/openPalm";
+import { selectOpenPalm } from "../vision/depthTouch";
 export const clamp = (n: number, min = 0, max = 1) =>
   Math.max(min, Math.min(max, n));
 export function normalized(
@@ -65,6 +66,22 @@ export function selectHands(hands: Hand[], s: Settings, previous?: Hand) {
   const valid = hands.filter(
     (h) => Number.isFinite(h.point.x) && Number.isFinite(h.point.y),
   );
+  if (s.controlMode === "wand") {
+    const candidates = valid.filter((h) => !hasOpenPalm(h));
+    if (previous)
+      candidates.sort(
+        (a, b) =>
+          Math.hypot(
+            a.point.x - previous.point.x,
+            a.point.y - previous.point.y,
+          ) -
+          Math.hypot(
+            b.point.x - previous.point.x,
+            b.point.y - previous.point.y,
+          ),
+      );
+    return { pitch: candidates[0], volume: selectOpenPalm(valid) };
+  }
   const anatomical =
     s.assignment === "anatomical" &&
     valid.every((h) => h.score >= 0.6 && ["Left", "Right"].includes(h.label)) &&
@@ -81,9 +98,6 @@ export function selectHands(hands: Hand[], s: Settings, previous?: Hand) {
   const roles = s.pitchLeft
     ? { pitch: left, volume: right }
     : { pitch: right, volume: left };
-  if (s.controlMode === "wand") {
-    roles.pitch = selectWand(roles.pitch ? [roles.pitch] : [], previous);
-  }
   return roles;
 }
 export class TrackingGate {

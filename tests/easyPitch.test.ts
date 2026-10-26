@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { easyPitch, easyWindow } from "../src/music/easyPitch";
 import { midiFrequency } from "../src/music/song";
-import { emptyMatch, matchNote } from "../src/music/noteMatch";
+import { emptyMatch, matchNote, type MatchState } from "../src/music/noteMatch";
 import { emptyReading } from "../src/types/theremin";
 it("corrects up to three semitones on either side of the target, without changing distant notes", () => {
   for (const target of [48, 69, 84]) {
@@ -71,4 +71,30 @@ it("counts repeated notes as score events rather than expanding the window to di
   }));
   expect(easyWindow(notes, 0)).toEqual([60, 60, 60]);
   expect(easyWindow(notes, 1.5)).toEqual([60, 60, 60, 62]);
+});
+
+it("a new depth touch can articulate repeated notes with the other index", () => {
+  const reading = {
+    ...emptyReading,
+    pitch: true,
+    volume: true,
+    gain: 0.1,
+    frequency: 440,
+    attack: 2,
+  };
+  let state: MatchState = { ...emptyMatch, release: true, attack: 1, last: 100 };
+  for (const now of [200, 300]) {
+    state = matchNote(state, reading, 69, now, true);
+    expect(state.release).toBe(false);
+  }
+  expect(matchNote(state, reading, 69, 400, true).passed).toBe(true);
+  expect(
+    matchNote(
+      { ...emptyMatch, release: true, attack: 2, last: 100 },
+      reading,
+      69,
+      400,
+      true,
+    ).passed,
+  ).toBe(false);
 });

@@ -54,7 +54,7 @@ for (const channel of ["chrome", "msedge"]) {
       .getByRole("status")
       .filter({
         hasText:
-          "Mostre o indicador da mão de nota e a palma aberta da mão de volume. O avanço é automático.",
+          "Mostre um indicador e a outra palma aberta. O avanço é automático.",
       })
       .waitFor();
     await page.getByRole("button", { name: "Cancelar", exact: true }).click();

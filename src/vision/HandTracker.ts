@@ -48,7 +48,17 @@ export class HandTracker {
         x: 1 - ids.reduce((a, id) => a + points[id].x, 0) / ids.length,
         y: ids.reduce((a, id) => a + points[id].y, 0) / ids.length,
       };
+      const aspect = video.videoHeight / (video.videoWidth || 1);
+      const span = Math.max(
+        ...[5, 9, 17].map((id) =>
+          Math.hypot(
+            points[id].x - points[0].x,
+            (points[id].y - points[0].y) * aspect,
+          ),
+        ),
+      );
       return {
+        approach: Math.max(0.001, span - (points[8].z - points[0].z) * 0.6),
         point,
         label: result.handedness[i]?.[0]?.categoryName ?? "",
         score: result.handedness[i]?.[0]?.score ?? 0,

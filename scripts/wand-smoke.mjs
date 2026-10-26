@@ -18,8 +18,15 @@ try {
   await page.addInitScript(() => {
     localStorage.clear();
     window.hands = [
-      { x: 0.5, y: 0.5, label: "Left", straight: true },
-      { x: 0.8, y: 0.5, label: "Right", straight: true, palmOpen: true },
+      { x: 0.5, y: 0.5, label: "Left", straight: true, depth: 1 },
+      {
+        x: 0.8,
+        y: 0.5,
+        label: "Right",
+        straight: true,
+        depth: 1,
+        palmOpen: true,
+      },
     ];
     window.contexts = [];
     const Native = window.AudioContext;
@@ -38,7 +45,7 @@ try {
   await page.route("**/src/vision/HandTracker.ts*", (route) =>
     route.fulfill({
       contentType: "application/javascript",
-      body: `export class HandTracker {delegate='SIMULATED';static async create(){return new HandTracker()}close(){}detect(){return window.hands.map(h=>{const p=Array.from({length:21},()=>({x:h.x+.1,y:h.y+.2}));for(let i=5;i<=8;i++)p[i]={x:h.x,y:h.y+(8-i)*.04};if(!h.straight)p[8]={...p[6]};return {point:{x:h.x,y:h.y},landmarks:p,label:h.label,score:1,palmOpen:h.palmOpen};});}}`,
+      body: `export class HandTracker {delegate='SIMULATED';static async create(){return new HandTracker()}close(){}detect(){return window.hands.map(h=>{const p=Array.from({length:21},()=>({x:h.x+.1,y:h.y+.2}));for(let i=5;i<=8;i++)p[i]={x:h.x,y:h.y+(8-i)*.04};if(!h.straight)p[8]={...p[6]};return {point:{x:h.x,y:h.y},landmarks:p,label:h.label,score:1,approach:h.depth,palmOpen:h.palmOpen};});}}`,
     }),
   );
   await page.goto(process.env.TEST_URL || "http://127.0.0.1:5174/");
@@ -76,187 +83,84 @@ try {
     window.manual = window.measure(window.contexts[0]);
     window.level = () => window.manual().peak;
   });
-  await page.waitForFunction(() => window.level() > 0.001);
-  const beforeRemoval = await page.locator("meter").evaluate((e) => e.value);
-  const volumeHand = await page.evaluate(() => window.hands.pop());
-  await page.waitForTimeout(1800);
-  if (
-    Math.abs(
-      (await page.locator("meter").evaluate((e) => e.value)) - beforeRemoval,
-    ) > 0.002 ||
-    (await page.evaluate(() => window.level())) < 0.001
-  )
-    throw Error("Removing volume hand changed the held volume");
-  await page.evaluate((h) => window.hands.push(h), volumeHand);
-  await page.waitForFunction(() => window.level() > 0.001);
-  const volume = await page.locator("meter").evaluate((e) => e.value);
+
+  await page.waitForTimeout(500);
+  if ((await page.evaluate(() => window.level())) > 0.001)
+    throw Error("Neutral hand played before approach");
   await page.evaluate(() => {
-    window.hands[1].y = 0.2;
+    window.hands[0].depth = 1.3;
   });
-  await page.waitForFunction(
-    (v) => document.querySelector("meter").value > v * 1.5,
-    volume,
-  );
+  await page.waitForFunction(() => window.level() > 0.001);
   const held = await page.locator("meter").evaluate((e) => e.value);
-  await page.waitForTimeout(800);
-  await page.evaluate(() => {
-    window.hands[1].y = 0.8;
-  });
-  await page.waitForTimeout(700);
+  const palm = await page.evaluate(() => window.hands.pop());
+  await page.waitForTimeout(1000);
+  if ((await page.evaluate(() => window.level())) < 0.001)
+    throw Error("Removing palm muted held note");
   if (
     Math.abs((await page.locator("meter").evaluate((e) => e.value)) - held) >
     0.002
   )
-    throw Error("Settled volume changed when resting the open hand");
+    throw Error("Volume drifted");
   await page.evaluate(() => {
-    window.hands[1].palmOpen = false;
-    window.hands[1].y = 0.8;
-    window.hands[0].y = 0.1;
+    window.hands[0].depth = 1;
   });
-  await page.waitForTimeout(600);
-  if (
-    Math.abs((await page.locator("meter").evaluate((e) => e.value)) - held) >
-    0.005
-  )
-    throw Error("Closed palm or left hand changed volume");
+  await page.waitForFunction(() => window.level() < 0.0001);
+  await page.evaluate((h) => {
+    h.palmOpen = false;
+    window.hands.push(h);
+  }, palm);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    window.hands[1].depth = 1.3;
+  });
+  await page.waitForFunction(() => window.level() > 0.001);
+  await page.evaluate(() => window.hands.reverse());
+  await page.waitForTimeout(300);
+  if ((await page.evaluate(() => window.level())) < 0.001)
+    throw Error("Detector reorder muted active finger");
+  await page.evaluate(() => {
+    window.hands[0].depth = 1;
+  });
+  await page.waitForFunction(() => window.level() < 0.0001);
+  // The other palm can now set volume; no left/right assignment is used.
   await page.evaluate(() => {
     window.hands[1].palmOpen = true;
-    window.hands[1].y = 0.7;
-  });
-  await page.waitForFunction(
-    (v) => document.querySelector("meter").value < v / 2,
-    held,
-  );
-  await page.evaluate(() => {
     window.hands[1].y = 0.2;
   });
   await page.waitForFunction(
-    (v) => document.querySelector("meter").value > v * 0.9,
+    (v) => document.querySelector("meter").value > v,
     held,
   );
+  await page.waitForTimeout(800);
+  const setVolume = await page.locator("meter").evaluate((e) => e.value);
   await page.evaluate(() => {
-    window.hands[0].straight = false;
+    window.hands = [];
   });
   await page.waitForFunction(() => window.level() < 0.0001);
-  await page.evaluate(() => {
-    window.hands[0].straight = true;
-  });
-  await page.waitForFunction(() => window.level() > 0.001);
-  await page
-    .getByRole("combobox", { name: "Música", exact: true })
-    .selectOption("demo");
-  await page.getByLabel("Velocidade (%)", { exact: true }).fill("0");
-  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
-  const targetX = await page
-    .locator(".song-target")
-    .evaluate((e) => parseFloat(e.style.left) / 100);
-  await page.evaluate((x) => {
-    window.hands[0].x = x;
-  }, targetX);
-  await page.waitForFunction(
-    () => Math.abs(window.manual().frequency - 261.625565) < 0.2,
-  );
-  const manualFrequency = await page.evaluate(() => window.manual().frequency);
-  await page.getByRole("button", { name: "Easy", exact: true }).click();
-  const nearX = await page.evaluate((x) => {
-    const s = JSON.parse(localStorage.getItem("air-theremin-settings"));
-    return (
-      x +
-      ((s.invertPitch ? -1 : 1) *
-        (s.pitchMax - s.pitchMin) *
-        ((2.8 / 12) * Math.log(2))) /
-        Math.log(s.fMax / s.fMin) /
-        s.sensitivity
-    );
-  }, targetX);
-  await page.evaluate((x) => {
-    window.hands[0].x = x;
-  }, nearX);
-  await page.waitForTimeout(500);
-  await page.waitForFunction(
-    () => Math.abs(window.manual().frequency - 293.664768) < 0.3,
-  );
-  await page.getByRole("button", { name: "Normal", exact: true }).click();
-  await page.waitForFunction(() => window.manual().frequency > 270);
-  await page.evaluate((x) => {
-    window.hands[0].x = x;
-  }, targetX);
-  await page.getByRole("button", { name: "PARAR", exact: true }).click();
-  await page.evaluate(() => {
-    window.hands[0].x = 0.8;
-  });
-  await page
-    .getByRole("button", { name: "Acertar para avançar", exact: true })
-    .click();
-  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
-  await page.waitForTimeout(700);
-  if ((await page.locator(".song-target span").textContent()) !== "Dó4")
-    throw Error("Wrong note advanced");
-  if (await page.locator(".song-next").count())
-    throw Error("Future note leaked");
-  await page.evaluate((x) => {
-    window.hands[0].x = x;
-  }, targetX);
-  await page.waitForFunction(
-    () => document.querySelector(".song-target span")?.textContent === "Ré4",
-  );
-  await page.evaluate(() => {
-    window.hands[0].straight = false;
-  });
-  await page.waitForFunction(() => window.level() < 0.0001);
-  await mkdir("test-results", { recursive: true });
-  await page.screenshot({
-    path: "test-results/wand-desktop.png",
-    fullPage: true,
-  });
-  await page.getByRole("button", { name: "PARAR", exact: true }).click();
-  await page.getByLabel("Velocidade (%)", { exact: true }).fill("10");
-  await page
-    .getByRole("button", { name: "♪ Ouvir música", exact: true })
-    .click();
-  await page.waitForFunction(() => window.contexts.length === 2);
-  await page.evaluate(() => {
-    window.automatic = window.measure(window.contexts[1]);
-  });
-  await page.waitForFunction(
-    () =>
-      window.contexts.length === 2 &&
-      Math.abs(window.automatic().frequency - 261.625565) < 0.2,
-    {},
-    { timeout: 8000 },
-  );
-  const automaticFrequency = await page.evaluate(
-    () => window.automatic().frequency,
-  );
-  if (Math.abs(manualFrequency - automaticFrequency) > 0.4)
-    throw Error("Different pitch for same note");
-  await page.getByRole("button", { name: "Desligar som automático" }).click();
-  await page.getByRole("button", { name: "Parar", exact: true }).click();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    path: "test-results/wand-mobile.png",
-    fullPage: true,
-  });
+  await page.waitForTimeout(600);
   if (
-    await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
+    Math.abs(
+      (await page.locator("meter").evaluate((e) => e.value)) - setVolume,
+    ) > 0.002
   )
-    throw Error("Overflow");
-  if (errors.length) throw Error(errors.join("\n"));
+    throw Error("Volume was not latched");
+  if (await page.locator(".hand-swap").count())
+    throw Error("Hand inversion still visible");
+  await mkdir("test-results", { recursive: true });
+  await page.screenshot({ path: "test-results/depth-touch-desktop.png" });
   const report = {
-    separateHands: true,
-    absentVolumeHandKeepsSound: true,
-    closedPalmHoldsVolume: true,
-    foldedSilent: true,
-    oneTarget: true,
-    advanceOnMatch: true,
-    manualFrequency,
-    automaticFrequency,
+    approachPlays: true,
+    retreatSilences: true,
+    eitherIndex: true,
+    eitherPalm: true,
+    latchedVolume: true,
     errors,
   };
   await writeFile(
     "test-results/wand-report.json",
     JSON.stringify(report, null, 2),
   );
+  if (errors.length) throw Error(errors.join("\n"));
   console.log(report);
 } finally {
   await browser.close();

@@ -1,6 +1,11 @@
 import type { Reading } from "../types/theremin";
 import { midiFrequency } from "./song";
-export type MatchState = { held: number; last: number; release: boolean };
+export type MatchState = {
+  held: number;
+  last: number;
+  release: boolean;
+  attack?: number;
+};
 export const emptyMatch: MatchState = { held: 0, last: 0, release: false };
 export function matchNote(
   state: MatchState,
@@ -10,7 +15,11 @@ export function matchNote(
   enabled: boolean,
 ) {
   const dt = state.last ? Math.max(0, Math.min(150, now - state.last)) : 0;
-  const release = state.release && reading.pitch;
+  const newAttack =
+    state.attack !== undefined &&
+    reading.attack !== undefined &&
+    state.attack !== reading.attack;
+  const release = state.release && reading.pitch && !newAttack;
   const correct =
     enabled &&
     !release &&
@@ -19,6 +28,14 @@ export function matchNote(
     reading.gain > 0.002 &&
     Math.abs(1200 * Math.log2(reading.frequency / midiFrequency(midi))) <= 35;
   // A long gap is not evidence that the player held the note.
-  const held = correct ? (now - state.last <= 200 ? state.held : 0) + dt : 0;
-  return { held, last: now, release, passed: held >= 250 };
+  const held = correct
+    ? (now - state.last <= 200 ? (newAttack ? 0 : state.held) : 0) + dt
+    : 0;
+  return {
+    held,
+    last: now,
+    release,
+    attack: reading.attack,
+    passed: held >= 250,
+  };
 }

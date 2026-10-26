@@ -163,7 +163,7 @@ export function SettingsPanel({
         {number("delay", "Delay", 0, 0.3, 0.01)}
         {toggle("invertPitch", "Inverter eixo de pitch")}
         {toggle("invertVolume", "Inverter eixo de volume")}
-        {
+        {s.controlMode !== "wand" && (
           <label className="check">
             <input
               type="checkbox"
@@ -172,11 +172,11 @@ export function SettingsPanel({
             />
             Inverter mãos: direita na nota, esquerda no volume
           </label>
-        }
+        )}
       </div>
       <p>
         {s.controlMode === "wand"
-          ? "Indicador esticado controla a nota; dobrado silencia. A palma da outra mão ajusta o volume. Mantenha a altura por 0,6 s para fixar; feche e abra a palma para ajustar novamente. O valor fica salvo neste navegador."
+          ? "Aproxime qualquer indicador da câmera para tocar; recue para silenciar. Ao mostrar a mão, aguarde um instante para definir a distância de repouso. Qualquer palma aberta ajusta o volume. Mantenha a altura por 0,6 s para fixar; feche e abra a palma para ajustar novamente. O valor fica salvo neste navegador."
           : s.pitchLeft
             ? "Mão esquerda: nota. Mão direita: volume."
             : "Mão direita: nota. Mão esquerda: volume."}{" "}

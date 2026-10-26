@@ -19,7 +19,7 @@ export function CalibrationWizard({
 }) {
   const presence =
     settings.controlMode === "wand"
-      ? "Mostre o indicador da mão de nota e a palma aberta da mão de volume. O avanço é automático."
+      ? "Mostre um indicador e a outra palma aberta. O avanço é automático."
       : "Mostre as duas mãos. O avanço é automático.";
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -73,8 +73,8 @@ export function CalibrationWizard({
           step === 0
             ? presence
             : step === 2
-              ? "Contagem pausada. Mostre a mão de volume com a palma aberta."
-              : "Contagem pausada. Mostre a mão de nota com o indicador esticado.",
+              ? "Contagem pausada. Mostre qualquer palma aberta."
+              : "Contagem pausada. Mostre qualquer indicador.",
         );
         return;
       }
@@ -95,7 +95,7 @@ export function CalibrationWizard({
       }
       setProgress(Math.min(1, captured / duration));
       setMessage(
-        `${step === 0 ? (settings.controlMode === "wand" ? "Mantenha o indicador esticado" : "Mantenha as duas mãos visíveis") : "Continue o movimento"} · ${Math.ceil(Math.max(0, duration - captured) / 1000)} s`,
+        `${step === 0 ? (settings.controlMode === "wand" ? "Mantenha o indicador visível" : "Mantenha as duas mãos visíveis") : "Continue o movimento"} · ${Math.ceil(Math.max(0, duration - captured) / 1000)} s`,
       );
       if (captured < duration) return;
       if (
@@ -160,11 +160,11 @@ export function CalibrationWizard({
         {
           [
             settings.controlMode === "wand"
-              ? "Mão de nota: indicador esticado. Mão de volume: palma aberta. Mantenha por 2 segundos; o som fica pausado até terminar."
+              ? "Use um indicador e a outra palma aberta. Mantenha por 2 segundos; o som fica pausado até terminar."
               : "Mantenha as palmas no quadro por 2 segundos. O som fica pausado até terminar.",
             settings.controlMode === "antennas"
               ? "Aproxime e afaste as pontas dos dedos da haste por 6 s, no pequeno alcance que quer usar. O dedo marcado controla a nota."
-              : "Percorra a largura confortável por 6 segundos com o indicador esticado. A ponta marcada controla a nota.",
+              : "Percorra a largura confortável por 6 segundos com qualquer indicador visível. A ponta marcada controla a nota.",
             settings.controlMode === "antennas"
               ? "Por 6 s, baixe a mão até onde quer silêncio e eleve até seu máximo confortável. O laço será ajustado."
               : "Percorra toda a altura confortável durante 6 segundos. Ao terminar, salvamos e liberamos o som.",

@@ -18,6 +18,7 @@ import {
 } from "../mapping/gestureMapping";
 import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
+import { DepthTouch, selectOpenPalm } from "../vision/depthTouch";
 import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
 import { easyPitch, type EasyTarget } from "../music/easyPitch";
 const connections = [
@@ -145,6 +146,8 @@ export function useHandTracking(
         interval = 33;
       let expression = current.current.settings.brightness;
       let wand: Hand | undefined;
+      let volumeHand: Hand | undefined;
+      const depthTouch = new DepthTouch();
       const volumeLatch = new VolumeLatch(loadVolume());
       let heldVolume = volumeLatch.value;
       timer = window.setInterval(() => {
@@ -155,7 +158,10 @@ export function useHandTracking(
           pitchFilter.reset();
           volumeFilter.reset();
           const stale = document.hidden || now - frameTime.current > 150;
-          if (stale) hands.current = [];
+          if (stale) {
+            hands.current = [];
+            depthTouch.reset();
+          }
           setReading((r) => ({
             ...r,
             gain: 0,
@@ -201,7 +207,14 @@ export function useHandTracking(
           frameTime.current = detectedAt;
           interval = inferenceMs > 40 ? 66 : 33;
           const previousWand = wand;
-          const roles = selectHands(found, s, wand);
+          volumeHand = selectOpenPalm(found, volumeHand);
+          const roles =
+            s.controlMode === "wand"
+              ? {
+                  pitch: depthTouch.update(found, detectedAt),
+                  volume: volumeHand,
+                }
+              : selectHands(found, s, wand);
           wand = s.controlMode === "wand" ? roles.pitch : undefined;
           if (s.controlMode === "wand" && (!wand || !previousWand)) {
             pitchFilter.reset();
@@ -236,13 +249,7 @@ export function useHandTracking(
             );
           } else if (!safe) pitchFilter.reset();
           if (s.controlMode === "wand") {
-            // Never let ambiguous single-hand reassignment overwrite the volume.
-            const confident =
-              !current.current.calibrating &&
-              roles.volume &&
-              (s.assignment === "screen" ||
-                (roles.volume.score >= 0.6 &&
-                  roles.volume.label === (s.pitchLeft ? "Left" : "Right")));
+            const confident = !current.current.calibrating && roles.volume;
             const previousVolume = heldVolume;
             heldVolume = volumeLatch.update(
               confident && hasOpenPalm(roles.volume!)
@@ -252,7 +259,10 @@ export function useHandTracking(
             );
             if (heldVolume !== previousVolume) volumeLatch.save();
           } else if (roles.volume) heldVolume = volumeControl(roles.volume, s);
-          if (safe && (s.controlMode === "wand" || roles.volume)) {
+          if (
+            safe &&
+            (s.controlMode === "wand" ? !!roles.pitch : !!roles.volume)
+          ) {
             const t = volumeFilter.update(heldVolume, dt, s.smoothing);
             gain = t * t * s.maxGain;
           } else volumeFilter.reset();
@@ -322,7 +332,7 @@ export function useHandTracking(
                           ? "VOLUME FIXADO"
                           : "VOLUME · PALMA ABERTA"
                         : "VOLUME MANTIDO"
-                      : "ESTIQUE O INDICADOR"
+                      : "APROXIME PARA TOCAR"
                   : h === roles.pitch
                     ? "PITCH"
                     : h === roles.volume
@@ -342,6 +352,7 @@ export function useHandTracking(
           if (now - lastUI > 100) {
             lastUI = now;
             setReading({
+              attack: s.controlMode === "wand" ? depthTouch.attack : undefined,
               frequency,
               gain,
               volumeLevel: heldVolume,

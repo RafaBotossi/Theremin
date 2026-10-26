@@ -15,23 +15,24 @@ function hand(x: number, label = "Left"): Hand {
     landmarks[id] = { x, y: 0.7 - (id - 5) * 0.1, z: 0 };
   return { point: { x: 0.9, y: 0.9 }, landmarks, label, score: 0.5 };
 }
-it("inverte os papéis mantendo nota e volume separados ao cruzar as mãos", () => {
-  const left = { ...hand(0.8, "Left"), score: 1 };
-  const right = { ...hand(0.2, "Right"), score: 1 };
+it("qualquer indicador e qualquer palma podem assumir os controles", () => {
+  const left = { ...hand(0.8, "Left"), palmOpen: false };
+  const right = { ...hand(0.2, "Right"), palmOpen: true };
   expect(selectHands([right, left], defaults)).toEqual({
     pitch: left,
     volume: right,
   });
-  expect(selectHands([left], defaults).volume).toBeUndefined();
-  expect(selectHands([right], defaults).pitch).toBeUndefined();
-  expect(pitchPoint(left, defaults)).toBe(left.landmarks[8]);
-  const volume = volumeControl(right, defaults);
-  left.landmarks[8].y = 0.1;
-  expect(volumeControl(right, defaults)).toBe(volume);
-  right.landmarks = right.landmarks.map((p) => ({ ...p, y: p.y - 0.2 }));
-  expect(volumeControl(right, defaults)).toBeGreaterThan(volume);
-  left.landmarks[8] = { ...left.landmarks[6] };
-  expect(selectHands([right, left], defaults).pitch).toBeUndefined();
+  expect(selectHands([left], defaults).pitch).toBe(left);
+  right.palmOpen = false;
+  left.palmOpen = true;
+  expect(selectHands([left, right], defaults)).toEqual({
+    pitch: right,
+    volume: left,
+  });
+  expect(pitchPoint(right, defaults)).toBe(right.landmarks[8]);
+  const volume = volumeControl(left, defaults);
+  left.landmarks = left.landmarks.map((p) => ({ ...p, y: p.y - 0.2 }));
+  expect(volumeControl(left, defaults)).toBeGreaterThan(volume);
 });
 
 it("dobra silencia; extensão independe de escala, rotação e distância", () => {

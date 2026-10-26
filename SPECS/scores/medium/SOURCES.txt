@@ -1,0 +1,32 @@
+Downloaded from Mutopia Project on 2026-10-25. Original LilyPond sources are retained here.
+Playable editions: src/music/mediumSongs.ts. Solo melody only; no recording assets.
+Difficulty labels describe these study versions, not the full orchestral/piano works.
+
+Greensleeves: Mutopia 109, Aaron Fontaine; Public Domain.
+https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=109
+Complete melody in A minor, no accompaniment, 84 quarter beats/minute instead of 160.
+33 bars including the pickup; source bars containing two measures split at 3 beats.
+
+Silent Night / Noite Feliz: Mutopia 521, Daniel Widyanto / Mutopia, copyright 2004.
+https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=521
+CC BY-SA 2.0: https://creativecommons.org/licenses/by-sa/2.0/
+Our adapted Silent Night score data are also licensed CC BY-SA 2.0.
+Melody transposed down 7 semitones to C; final tonic from guitar accompaniment
+added to resolve the solo tune. 23 bars in 3/4, 66 quarter beats/minute.
+
+Brahms, Wiegenlied: Mutopia 1037, Shogo Mori; Public Domain.
+https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1037
+Vocal line only, Eb to C, no piano intro, no repeats, grace notes omitted.
+Pickup plus 16 measures; final rest trimmed. 72 quarter beats/minute.
+
+Minuet in G, BWV Anh. 114: Mutopia 75, Allen Garvin; Public Domain.
+https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=75
+Attributed to Christian Petzold. Upper voice only, ornaments omitted,
+both 16-bar strains played once without repeats. 72 quarter beats/minute.
+
+Schubert, Ave Maria D839: Mutopia 1054, Ph. Raynaud; Public Domain.
+https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1054
+Vocal theme, source measures 3-14, no piano, grace notes or mordents;
+written notes, tuplets and internal rests retained. Final Bb held for a full bar
+instead of quarter note followed by rests. No subsequent stanzas or piano outro.
+60 quarter beats/minute; use lower speed for the small ornamental subdivisions.

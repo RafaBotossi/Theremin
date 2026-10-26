@@ -1629,3 +1629,37 @@ footer {
     justify-self: end;
   }
 }
+.instrument-app .song-selection-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  min-width: 0;
+}
+.instrument-app .song-level {
+  width: 90px;
+  flex-shrink: 0;
+}
+.instrument-app .song-selection-row .song-selection {
+  flex: 0 1 420px;
+  min-width: 0;
+}
+.instrument-app .song-selection-row .song-segments {
+  flex-shrink: 0;
+  padding-bottom: 3px;
+}
+.instrument-app .song-mode-row {
+  grid-column: 1 / -1;
+}
+@media (max-width: 720px) {
+  .instrument-app .song-selection-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .instrument-app .song-selection-row .song-selection {
+    flex: 1 1 180px;
+  }
+  .instrument-app .song-selection-row .song-segments {
+    margin-left: auto;
+  }
+}

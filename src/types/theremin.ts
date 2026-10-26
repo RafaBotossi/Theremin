@@ -7,6 +7,7 @@ export interface Hand {
   label: string;
   score: number;
   landmarks: Point[];
+  approach?: number;
   openness?: number;
   palmOpen?: boolean;
   indexExtension?: number;
@@ -196,6 +197,7 @@ export function loadSettings(): Settings {
   }
 }
 export interface Reading {
+  attack?: number;
   volumeLevel?: number;
   frequency: number;
   gain: number;

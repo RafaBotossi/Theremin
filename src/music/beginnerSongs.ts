@@ -3,13 +3,13 @@ import type { Melody } from "./song";
 // Each pair is [MIDI pitch, beats]. Bars are explicit to retain score positions.
 // These are solo study adaptations; source files and editorial choices are in
 // SPECS/scores/SOURCES.txt. No recordings or runtime downloads are used.
-type Bar = [number, number][];
-function melody(name: string, bpm: number, bars: Bar[]): Melody {
+type Bar = [number | null, number][];
+export function melody(name: string, bpm: number, bars: Bar[]): Melody {
   let beat = 0;
   return {
     name,
     notes: bars.flatMap((bar, index) =>
-      bar.map(([midi, length]) => {
+      bar.flatMap(([midi, length]) => {
         const note = {
           midi,
           start: (beat * 60) / bpm,
@@ -17,7 +17,7 @@ function melody(name: string, bpm: number, bars: Bar[]): Melody {
           measure: index + 1,
         };
         beat += length;
-        return note;
+        return midi === null ? [] : [{ ...note, midi }];
       }),
     ),
   };
@@ -51,7 +51,16 @@ const graceRun: Bar = [
   [60, 1 / 3],
 ];
 
-export const beginnerSongs = [
+export interface StudySong {
+  id: string;
+  label: string;
+  melody: Melody;
+  source: string;
+  credit: string;
+  license?: string;
+  licenseName?: string;
+}
+export const beginnerSongs: StudySong[] = [
   {
     id: "ode-joy",
     label: "Ode à Alegria · fácil",

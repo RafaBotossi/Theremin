@@ -20,6 +20,11 @@ it("selects a starting note, toggles advanced options and scopes Easy to the act
       onSettings={vi.fn()}
     />,
   );
+  expect(screen.getByLabelText("Nível")).toHaveValue("easy");
+  expect(screen.getByRole("button", { name: "Easy" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   expect(screen.getByLabelText("Transpor")).not.toBeVisible();
   fireEvent.click(
     screen.getByRole("button", { name: "Configurações avançadas" }),
@@ -137,6 +142,9 @@ it("conta três segundos, destaca notas, pausa e encerra o guia", () => {
       onSettings={onSettings}
     />,
   );
+  fireEvent.change(screen.getByLabelText("Nível"), {
+    target: { value: "hard" },
+  });
   fireEvent.change(screen.getByLabelText("Começar em"), {
     target: { value: "12" },
   });
@@ -198,6 +206,9 @@ it("0% fixa o primeiro alvo sem infinito e 1% avança lentamente", () => {
       onSettings={vi.fn()}
     />,
   );
+  fireEvent.change(screen.getByLabelText("Nível"), {
+    target: { value: "hard" },
+  });
   fireEvent.change(screen.getByLabelText("Começar em"), {
     target: { value: "12" },
   });

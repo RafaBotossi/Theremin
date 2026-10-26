@@ -29,7 +29,18 @@ try {
     };
   });
   await page.goto("http://localhost:5173");
-  for (const id of ["ode-joy", "little-star", "amazing-grace"]) {
+  for (const id of [
+    "ode-joy",
+    "little-star",
+    "amazing-grace",
+    "greensleeves",
+    "silent-night",
+    "brahms-lullaby",
+    "minuet-g",
+    "ave-maria",
+  ]) {
+    if (id === "greensleeves")
+      await page.locator(".song-level select").selectOption("medium");
     await page.locator(".song-selection select").selectOption(id);
     await page.locator(".song-transport button").first().click();
     await page.waitForFunction(
@@ -40,7 +51,7 @@ try {
     await page.locator(".song-target").waitFor();
     await page.locator(".song-stop").click();
     await page
-      .locator(".song-segments")
+      .locator(".song-mode-row .song-segments")
       .first()
       .locator("button")
       .nth(1)
@@ -51,7 +62,7 @@ try {
       throw Error("Step mode shows future notes");
     await page.locator(".song-stop").click();
     await page
-      .locator(".song-segments")
+      .locator(".song-mode-row .song-segments")
       .first()
       .locator("button")
       .first()

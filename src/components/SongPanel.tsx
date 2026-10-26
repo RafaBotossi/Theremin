@@ -15,6 +15,7 @@ import {
   type SongGuide,
 } from "../music/song";
 import { easyWindow } from "../music/easyPitch";
+import { mediumSongs } from "../music/mediumSongs";
 import { beginnerSongs } from "../music/beginnerSongs";
 import { buildEcstasy } from "../music/ecstasyScore";
 import { useSongPlayback } from "../hooks/useSongPlayback";
@@ -41,9 +42,10 @@ export function SongPanel({
   onGuide: (g: SongGuide) => void;
   reading?: Reading;
 }) {
-  const [choice, setChoice] = useState("ecstasy");
+  const [choice, setChoice] = useState("ode-joy");
+  const [level, setLevel] = useState("easy");
   const [advanced, setAdvanced] = useState(false);
-  const [easy, setEasy] = useState(false);
+  const [easy, setEasy] = useState(true);
   const [startNote, setStartNote] = useState(0);
   const [tracks, setTracks] = useState<Melody[]>([]);
   const [track, setTrack] = useState(0);
@@ -72,7 +74,9 @@ export function SongPanel({
   const match = useRef({ ...emptyMatch });
   const generation = useRef(0),
     wasRunning = useRef(running);
-  const beginnerSong = beginnerSongs.find((song) => song.id === choice);
+  const beginnerSong = [...beginnerSongs, ...mediumSongs].find(
+    (song) => song.id === choice,
+  );
   const melody =
     choice === "ecstasy"
       ? scoreMelody
@@ -126,7 +130,7 @@ export function SongPanel({
             ? `Prepare as mãos · ${Math.ceil(-time)}`
             : frame.current
               ? `Agora ${noteName(midiFrequency(frame.current.midi))}${frame.current.measure ? ` · compasso ${frame.current.measure}` : ""}`
-              : "Pausa · dobre o indicador";
+              : "Pausa · recue o indicador";
 
   useEffect(() => {
     if (!practice || status !== "playing" || !notes[noteIndex]) {
@@ -151,6 +155,7 @@ export function SongPanel({
     match.current = {
       ...emptyMatch,
       release: notes[index].midi === notes[noteIndex].midi,
+      attack: reading.attack,
     };
     setNoteIndex(index);
   }, [reading, practice, status, noteIndex, notes, running, blocked, loop]);
@@ -318,33 +323,91 @@ export function SongPanel({
           Configurações avançadas
         </button>
       </div>
-      <div className="song-selection">
-        <label>
-          Música
+      <div className="song-selection-row">
+        <label className="song-level">
+          Nível
           <select
-            value={choice}
+            value={level}
             onChange={(e) => {
-              generation.current++;
-              setChoice(e.target.value);
-              setStartNote(0);
               reset();
+              setLevel(e.target.value);
+              setStartNote(0);
+              setStartMeasure(1);
               setError("");
+              setChoice(
+                e.target.value === "easy"
+                  ? "ode-joy"
+                  : e.target.value === "medium"
+                    ? "greensleeves"
+                    : "ecstasy",
+              );
             }}
           >
-            <option value="ecstasy">
-              The Ecstasy of Gold · partitura (solo)
-            </option>
-            <optgroup label="Para começar">
-              {beginnerSongs.map((song) => (
+            <option value="easy">Fácil</option>
+            <option value="medium">Médio</option>
+            <option value="hard">Difícil</option>
+          </select>
+        </label>
+        <div className="song-selection">
+          <label>
+            Música
+            <select
+              value={choice}
+              onChange={(e) => {
+                generation.current++;
+                setChoice(e.target.value);
+                setStartNote(0);
+                reset();
+                setError("");
+              }}
+            >
+              {level === "hard" && (
+                <option value="ecstasy">
+                  The Ecstasy of Gold · partitura (solo)
+                </option>
+              )}
+              {(level === "easy"
+                ? beginnerSongs
+                : level === "medium"
+                  ? mediumSongs
+                  : []
+              ).map((song) => (
                 <option key={song.id} value={song.id}>
                   {song.label}
                 </option>
               ))}
-            </optgroup>
-            <option value="demo">Exercício original · demonstração</option>
-            <option value="midi">Meu arquivo MIDI</option>
-          </select>
-        </label>
+              {level === "easy" && (
+                <option value="demo">Exercício original · demonstração</option>
+              )}
+              <option value="midi">Meu arquivo MIDI</option>
+            </select>
+          </label>
+        </div>
+        <div
+          role="group"
+          aria-label="Assistência de afinação"
+          className="song-segments"
+        >
+          <button
+            aria-pressed={!easy}
+            onClick={() => {
+              setEasy(false);
+              match.current = { ...emptyMatch };
+            }}
+          >
+            Normal
+          </button>
+          <button
+            aria-pressed={easy}
+            title="No guia com tempo, aceita até duas notas anteriores ou seguintes da música. Corrige para a mais próxima, até três semitons. Ao acertar para avançar, corrige para o alvo atual."
+            onClick={() => {
+              setEasy(true);
+              match.current = { ...emptyMatch };
+            }}
+          >
+            Easy
+          </button>
+        </div>
       </div>
       {choice === "midi" && (
         <div className="song-controls">
@@ -404,27 +467,6 @@ export function SongPanel({
             }}
           >
             Acertar para avançar
-          </button>
-        </div>
-        <div role="group" aria-label="Dificuldade" className="song-segments">
-          <button
-            aria-pressed={!easy}
-            onClick={() => {
-              setEasy(false);
-              match.current = { ...emptyMatch };
-            }}
-          >
-            Normal
-          </button>
-          <button
-            aria-pressed={easy}
-            title="No guia com tempo, aceita até duas notas anteriores ou seguintes da música. Corrige para a mais próxima, até três semitons. Ao acertar para avançar, corrige para o alvo atual."
-            onClick={() => {
-              setEasy(true);
-              match.current = { ...emptyMatch };
-            }}
-          >
-            Easy
           </button>
         </div>
       </div>
@@ -561,7 +603,7 @@ export function SongPanel({
                 {" "}
                 ·{" "}
                 <a href={beginnerSong.license} target="_blank" rel="noreferrer">
-                  CC BY-SA 3.0
+                  {beginnerSong.licenseName ?? "CC BY-SA 3.0"}
                 </a>
               </>
             )}
