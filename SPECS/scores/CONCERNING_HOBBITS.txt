@@ -1,0 +1,5 @@
+Concerning Hobbits — Howard Shore
+Fonte: MIDI fornecido pelo usuário em tmp/HowardShore_-_ConcerningHobbits__Anonymous_20130720044852.mid.
+Somente canal MIDI 3 (numeração 1–16). 83 notas, sem acompanhamento.
+Removidos 27.428544 segundos antes da primeira nota; demais tempos, pausas e durações preservados.
+Dificuldade: Difícil. Dados extraídos com src/music/midi.ts em src/music/hobbits.json.

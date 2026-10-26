@@ -247,6 +247,7 @@ export function App() {
             <NoteGuide
               settings={settings}
               frequency={r.frequency}
+              frequencies={r.voices?.map((v) => v.frequency)}
               active={running && r.pitch}
               target={songGuide.current}
               targetKey={songGuide.attack}

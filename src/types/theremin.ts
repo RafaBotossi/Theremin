@@ -207,6 +207,7 @@ export function loadSettings(): Settings {
   }
 }
 export interface Reading {
+  voices?: { frequency: number; attack: number }[];
   attack?: number;
   volumeLevel?: number;
   frequency: number;

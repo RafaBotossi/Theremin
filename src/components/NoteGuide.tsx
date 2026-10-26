@@ -8,6 +8,7 @@ export function notePosition(f: number, s: Settings) {
 export function NoteGuide({
   settings: s,
   frequency,
+  frequencies,
   active,
   target = null,
   upcoming = null,
@@ -17,6 +18,7 @@ export function NoteGuide({
 }: {
   settings: Settings;
   frequency: number;
+  frequencies?: number[];
   active: boolean;
   target?: number | null;
   upcoming?: number | null;
@@ -26,7 +28,12 @@ export function NoteGuide({
 }) {
   const first = Math.ceil(69 + 12 * Math.log2(s.fMin / 440));
   const last = Math.floor(69 + 12 * Math.log2(s.fMax / 440));
-  const nearest = Math.round(69 + 12 * Math.log2(frequency / 440));
+  const sounding = active
+    ? frequencies?.length
+      ? frequencies
+      : [frequency]
+    : [];
+  const nearest = sounding.map((f) => Math.round(69 + 12 * Math.log2(f / 440)));
   return (
     <div className="note-guide" aria-hidden="true">
       {Array.from({ length: last - first + 1 }, (_, i) => first + i).map(
@@ -43,7 +50,7 @@ export function NoteGuide({
           return (
             <div
               key={midi}
-              className={`note-line ${natural ? "natural" : "accidental"} ${active && midi === nearest ? "selected" : ""} ${scaleNote ? "" : "excluded"}`}
+              className={`note-line ${natural ? "natural" : "accidental"} ${nearest.includes(midi) ? "selected" : ""} ${scaleNote ? "" : "excluded"}`}
               style={{ left: `${position * 100}%` }}
             >
               <span className={`label-row-${midi % 3}`}>{noteName(f)}</span>
@@ -92,14 +99,15 @@ export function NoteGuide({
           <span>{noteName(440 * 2 ** ((target - 69) / 12))}</span>
         </div>
       )}
-      {active && (
+      {sounding.map((f, index) => (
         <div
+          key={index}
           className="pitch-cursor"
           style={{
-            left: `${Math.max(0, Math.min(1, notePosition(frequency, s))) * 100}%`,
+            left: `${Math.max(0, Math.min(1, notePosition(f, s))) * 100}%`,
           }}
         />
-      )}
+      ))}
     </div>
   );
 }

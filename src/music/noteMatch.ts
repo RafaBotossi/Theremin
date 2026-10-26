@@ -14,11 +14,13 @@ export function matchNote(
   now: number,
   enabled: boolean,
 ) {
+  const voice = matchingVoice(reading, midi);
+  if (voice) reading = { ...reading, ...voice };
   const dt = state.last ? Math.max(0, Math.min(150, now - state.last)) : 0;
   const newAttack =
     state.attack !== undefined &&
     reading.attack !== undefined &&
-    state.attack !== reading.attack;
+    reading.attack > state.attack;
   const release = state.release && reading.pitch && !newAttack;
   const correct =
     enabled &&
@@ -35,7 +37,20 @@ export function matchNote(
     held,
     last: now,
     release,
-    attack: reading.attack,
+    attack:
+      reading.attack === undefined
+        ? state.attack
+        : Math.max(state.attack ?? 0, reading.attack),
     passed: held >= 250,
   };
+}
+
+// Prefer the newest correct pinch, so a held older voice cannot advance twice.
+export function matchingVoice(reading: Reading, midi: number) {
+  return reading.voices
+    ?.filter(
+      (voice) =>
+        Math.abs(1200 * Math.log2(voice.frequency / midiFrequency(midi))) <= 35,
+    )
+    .sort((a, b) => b.attack - a.attack)[0];
 }

@@ -15,6 +15,7 @@ import {
   type SongGuide,
 } from "../music/song";
 import { easyWindow } from "../music/easyPitch";
+import hobbits from "../music/hobbits.json";
 import { mediumSongs } from "../music/mediumSongs";
 import { beginnerSongs } from "../music/beginnerSongs";
 import { buildEcstasy } from "../music/ecstasyScore";
@@ -84,12 +85,14 @@ export function SongPanel({
   const beginnerSong = [...beginnerSongs, ...mediumSongs].find(
     (song) => song.id === choice,
   );
-  const melody =
-    choice === "ecstasy"
-      ? scoreMelody
-      : choice === "demo"
-        ? demoMelody
-        : (beginnerSong?.melody ?? tracks[track]);
+  const melody: Melody | undefined =
+    choice === "hobbits"
+      ? hobbits
+      : choice === "ecstasy"
+        ? scoreMelody
+        : choice === "demo"
+          ? demoMelody
+          : (beginnerSong?.melody ?? tracks[track]);
   const notes = useMemo(() => {
     const offset =
       choice !== "ecstasy" && startNote > 0
@@ -182,7 +185,7 @@ export function SongPanel({
     match.current = {
       ...emptyMatch,
       release: true,
-      attack: reading.attack,
+      attack: next.attack,
     };
     setNoteIndex(index);
   }, [
@@ -443,9 +446,14 @@ export function SongPanel({
               }}
             >
               {level === "hard" && (
-                <option value="ecstasy">
-                  The Ecstasy of Gold · partitura (solo)
-                </option>
+                <>
+                  <option value="hobbits">
+                    Concerning Hobbits · Howard Shore
+                  </option>
+                  <option value="ecstasy">
+                    The Ecstasy of Gold · partitura (solo)
+                  </option>
+                </>
               )}
               {(level === "easy"
                 ? beginnerSongs

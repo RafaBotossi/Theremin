@@ -4,7 +4,8 @@ import { hallImpulse } from "./reverb";
 export class ThereminEngine {
   readonly context: AudioContext;
   readonly destination: MediaStreamAudioDestinationNode;
-  private voice: AudioWorkletNode | null = null;
+  private voices: AudioWorkletNode[] = [];
+  private lowpasses: BiquadFilterNode[] = [];
   private nodes: AudioNode[] = [];
   private lowpass: BiquadFilterNode;
   private vowel: BiquadFilterNode;
@@ -24,6 +25,7 @@ export class ThereminEngine {
     this.lowpass = c.createBiquadFilter();
     this.lowpass.type = "lowpass";
     this.lowpass.Q.value = 0.5;
+    this.lowpasses.push(this.lowpass);
     this.vowel = c.createBiquadFilter();
     this.vowel.type = "peaking";
     this.vowel.frequency.value = 900;
@@ -73,11 +75,24 @@ export class ThereminEngine {
       import.meta.env.BASE_URL + "audio/theremin-processor.js",
     );
     if (this.closing) return;
-    const voice = new AudioWorkletNode(this.context, "theremin-voice", {
-      numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [1],
-    });
+    for (let i = 0; i < 2; i++) {
+      const voice = new AudioWorkletNode(this.context, "theremin-voice", {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+      });
+      if (i > 0) {
+        const filter = this.context.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.Q.value = 0.5;
+        filter.connect(this.vowel);
+        this.lowpasses.push(filter);
+        this.nodes.push(filter);
+      }
+      voice.connect(this.lowpasses[i]);
+      this.voices.push(voice);
+      this.nodes.push(voice);
+    }
     const limiter = new AudioWorkletNode(this.context, "theremin-limiter", {
       numberOfInputs: 1,
       numberOfOutputs: 1,
@@ -89,14 +104,14 @@ export class ThereminEngine {
       this.failed = true;
       this.master.gain.setTargetAtTime(0, this.context.currentTime, 0.01);
     };
-    voice.onprocessorerror = failure;
+    this.voices.forEach((voice) => {
+      voice.onprocessorerror = failure;
+    });
     limiter.onprocessorerror = failure;
-    this.voice = voice;
-    voice.connect(this.lowpass);
     compressor.connect(limiter).connect(this.master);
     this.master.connect(this.context.destination);
     this.master.connect(this.destination);
-    this.nodes.push(voice, limiter);
+    this.nodes.push(limiter);
     this.configure(this.settings);
     this.master.gain.setTargetAtTime(1, this.context.currentTime, 0.02);
   }
@@ -109,8 +124,8 @@ export class ThereminEngine {
   get healthy() {
     return !this.failed && !this.closing && this.context.state === "running";
   }
-  private parameter(name: string, value: number) {
-    const p = this.voice?.parameters.get(name);
+  private parameter(name: string, value: number, index = 0) {
+    const p = this.voices[index]?.parameters.get(name);
     if (p) {
       p.cancelScheduledValues(this.context.currentTime);
       p.setValueAtTime(value, this.context.currentTime);
@@ -136,10 +151,12 @@ export class ThereminEngine {
                   s.harmonic4,
                   s.harmonic5,
                 ];
-    coefficients.forEach((h, i) => this.parameter("h" + (i + 1), h));
-    this.parameter("glide", s.glide);
-    this.parameter("vibratoRate", s.vibratoRate);
-    this.parameter("vibratoDepth", s.vibrato);
+    this.voices.forEach((_, index) => {
+      coefficients.forEach((h, i) => this.parameter("h" + (i + 1), h, index));
+      this.parameter("glide", s.glide, index);
+      this.parameter("vibratoRate", s.vibratoRate, index);
+      this.parameter("vibratoDepth", s.vibrato, index);
+    });
     this.vowel.gain.setTargetAtTime(s.vocalResonance * 3, t, 0.04);
     this.dry.gain.setTargetAtTime(Math.cos((s.reverb * Math.PI) / 2), t, 0.04);
     this.wet.gain.setTargetAtTime(Math.sin((s.reverb * Math.PI) / 2), t, 0.04);
@@ -151,17 +168,20 @@ export class ThereminEngine {
     safeForMs = 150,
     expression = this.settings.brightness,
     vibratoExpression = 0,
+    index = 0,
   ) {
-    if (!this.voice || this.closing || this.failed) return;
+    const voice = this.voices[index];
+    if (!voice || this.closing || this.failed) return;
     const frequency = clamp(Number.isFinite(f) ? f : 440, 40, 4000),
       gain = clamp(Number.isFinite(g) ? g : 0, 0, 0.25),
       t = this.context.currentTime;
-    this.parameter("logFrequency", Math.log(frequency));
+    this.parameter("logFrequency", Math.log(frequency), index);
     this.parameter(
       "vibratoExpression",
       clamp(Number.isFinite(vibratoExpression) ? vibratoExpression : 0),
+      index,
     );
-    const volume = this.voice.parameters.get("gain")!;
+    const volume = voice.parameters.get("gain")!;
     volume.cancelScheduledValues(t);
     volume.setValueAtTime(gain, t);
     // The audio clock owns this deadline, even if the main thread stops.
@@ -172,17 +192,19 @@ export class ThereminEngine {
     const color = clamp(
       Number.isFinite(expression) ? expression : this.settings.brightness,
     );
-    this.lowpass.frequency.setTargetAtTime(
+    this.lowpasses[index].frequency.setTargetAtTime(
       clamp(frequency * (3 + color * 9), 500, 16000),
       t,
       0.025,
     );
   }
+  silenceVoice(index: number) {
+    if (this.closing) return;
+    this.parameter("gain", 0, index);
+    this.parameter("vibratoExpression", 0, index);
+  }
   silence() {
-    if (this.voice && !this.closing) {
-      this.parameter("gain", 0);
-      this.parameter("vibratoExpression", 0);
-    }
+    this.voices.forEach((_, index) => this.silenceVoice(index));
   }
   close(): Promise<void> {
     if (this.closing) return this.closing;

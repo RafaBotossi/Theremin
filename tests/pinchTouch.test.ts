@@ -177,3 +177,29 @@ it("nearly touching fingertips play across rotations without chattering on small
     expect(touch.update([h], 1023)).toBeUndefined();
   }
 });
+
+it("keeps stable voice slots when detection order changes and releases each pinch separately", () => {
+  const touch = new PinchTouch(),
+    a = hand(0.2, 0.1),
+    b = hand(0.8, 0.1);
+  touch.update([a, b], 0);
+  touch.update([a, b], 40);
+  const initial = touch.active.map((t) => ({
+    hand: t.hand,
+    voice: t.voice,
+    attack: t.attack,
+  }));
+  expect(initial).toHaveLength(2);
+  touch.update([b, a], 80);
+  for (const t of initial)
+    expect(touch.active.find((x) => x.hand === t.hand)?.voice).toBe(t.voice);
+  b.pinchRatio = 0.8;
+  touch.update([b, a], 120);
+  expect(touch.active).toHaveLength(1);
+  expect(touch.active[0].hand).toBe(a);
+  expect(touch.active[0].attack).toBe(
+    initial.find((t) => t.hand === a)?.attack,
+  );
+  touch.update([], 160);
+  expect(touch.active).toHaveLength(0);
+});

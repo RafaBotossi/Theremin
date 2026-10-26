@@ -80,6 +80,8 @@ function separation(hand: Hand) {
   return hand.pinchRatio ?? pinchRatio(hand.landmarks);
 }
 interface Track {
+  voice: number;
+  attack: number;
   hand: Hand;
   seen: number;
   pressed: boolean;
@@ -90,6 +92,11 @@ interface Track {
 export class PinchTouch {
   private tracks: Track[] = [];
   attack = 0;
+  get active() {
+    return this.tracks
+      .filter((t) => t.pressed)
+      .sort((a, b) => b.attack - a.attack);
+  }
   reset() {
     this.tracks = [];
   }
@@ -110,7 +117,13 @@ export class PinchTouch {
       );
       const track = previous && distance(previous) < 0.3 ? previous : undefined;
       if (track) available.splice(available.indexOf(track), 1);
+      const voice = [0, 1].find(
+        (slot) => ![...next, ...available].some((t) => t.voice === slot),
+      );
+      if (!track && voice === undefined) continue;
       const t = track ?? {
+        voice: voice!,
+        attack: 0,
         hand,
         seen: now,
         pressed: false,
@@ -134,14 +147,14 @@ export class PinchTouch {
             t.pressed = true;
             t.changed = now;
             t.pending = null;
-            this.attack++;
+            t.attack = ++this.attack;
           }
         } else if (!t.pressed) t.pending = null;
       }
       next.push(t);
     }
     this.tracks = next;
-    // Monophonic instrument: most recently pressed finger takes the note.
+    // The newest attack remains the primary guide reading; both voices play.
     return next
       .filter((t) => t.pressed)
       .sort((a, b) => b.changed - a.changed)[0]?.hand;

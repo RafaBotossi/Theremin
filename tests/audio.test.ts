@@ -68,7 +68,11 @@ function mockContext() {
     },
   );
   const worklet = vi.fn(function () {
-    return { ...node(), parameters: params };
+    const own =
+      worklet.mock.calls.length === 1
+        ? params
+        : new Map([...params.keys()].map((k) => [k, param()]));
+    return { ...node(), parameters: own };
   });
   vi.stubGlobal("AudioWorkletNode", worklet);
   return { c, params, worklet };
@@ -77,11 +81,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
-it("creates one continuous voice and limiter, clamps targets and schedules safety in audio time", async () => {
+it("creates two continuous voices and limiter, clamps targets and schedules safety in audio time", async () => {
   const { c, params, worklet } = mockContext();
   const engine = new ThereminEngine();
   await engine.resume();
-  expect(worklet).toHaveBeenCalledTimes(2);
+  expect(worklet).toHaveBeenCalledTimes(3);
   expect(c.audioWorklet.addModule).toHaveBeenCalledWith(
     "/audio/theremin-processor.js",
   );
@@ -100,7 +104,7 @@ it("creates one continuous voice and limiter, clamps targets and schedules safet
   ).toHaveBeenLastCalledWith(0, 10);
   engine.update(220, 0.1, 150, 0.5, 1);
   engine.configure({ ...defaults, reverb: 0.5 });
-  expect(worklet).toHaveBeenCalledTimes(2);
+  expect(worklet).toHaveBeenCalledTimes(3);
   engine.silence();
   expect(params.get("gain")!.setValueAtTime).toHaveBeenLastCalledWith(0, 10);
   expect(params.get("logFrequency")!.setValueAtTime).toHaveBeenLastCalledWith(
@@ -139,4 +143,28 @@ it("rejects autoplay suspension and smoothly mutes processor failure", async () 
   expect(engine.healthy).toBe(true);
   worklet.mock.results[0].value.onprocessorerror();
   expect(engine.healthy).toBe(false);
+});
+
+it("keeps two independent pitches and safety deadlines, silences both", async () => {
+  const { worklet } = mockContext();
+  const engine = new ThereminEngine();
+  await engine.resume();
+  engine.update(220, 0.18, 150, 0.4, 0.5, 0);
+  engine.update(330, 0.18, 90, 0.4, 0.8, 1);
+  const a = worklet.mock.results[0].value.parameters;
+  const b = worklet.mock.results[1].value.parameters;
+  expect(a.get("logFrequency").setValueAtTime).toHaveBeenLastCalledWith(
+    Math.log(220),
+    10,
+  );
+  expect(b.get("logFrequency").setValueAtTime).toHaveBeenLastCalledWith(
+    Math.log(330),
+    10,
+  );
+  expect(b.get("gain").setValueAtTime).toHaveBeenLastCalledWith(0, 10.09);
+  engine.update(330, 0, 150, 0.4, 0, 1);
+  expect(a.get("gain").setValueAtTime).toHaveBeenCalledWith(0.18, 10);
+  engine.silence();
+  for (const params of [a, b])
+    expect(params.get("gain").setValueAtTime).toHaveBeenLastCalledWith(0, 10);
 });

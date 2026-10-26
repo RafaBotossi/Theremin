@@ -163,7 +163,12 @@ export function useHandTracking(
       let volumeHand: Hand | undefined;
       const pinchTouch = new PinchTouch();
       const pinchTarget = new PinchTarget();
-      const motionVibrato = new MotionVibrato();
+      const voiceStates = Array.from({ length: 2 }, () => ({
+        filter: new AdaptiveEMA(),
+        target: new PinchTarget(),
+        vibrato: new MotionVibrato(),
+        attack: -1,
+      }));
       const volumeLatch = new VolumeLatch(loadVolume());
       let heldVolume = volumeLatch.value;
       timer = window.setInterval(() => {
@@ -177,11 +182,11 @@ export function useHandTracking(
           if (stale) {
             hands.current = [];
             pinchTouch.reset();
-            motionVibrato.reset();
           }
           setReading((r) => ({
             ...r,
             gain: 0,
+            voices: [],
             ...(stale ? { pitch: false, volume: false, outside: false } : {}),
           }));
         }
@@ -245,20 +250,6 @@ export function useHandTracking(
             s.controlMode === "wand" || !!roles.volume,
           );
           let gain = 0;
-          const handVibrato = motionVibrato.update(
-            roles.pitch &&
-              s.controlMode === "wand" &&
-              !current.current.muted &&
-              !current.current.calibrating
-              ? 1200 *
-                  Math.log2(
-                    frequencyAt(pitchControl(roles.pitch, s), s.fMin, s.fMax) /
-                      440,
-                  )
-              : null,
-            detectedAt,
-            pinchTouch.attack,
-          );
           const target = pinchTarget.update(
             current.current.easyTarget,
             current.current.latchEasyTarget,
@@ -304,17 +295,70 @@ export function useHandTracking(
             gain = t * t * s.maxGain;
           } else volumeFilter.reset();
           if (current.current.muted || current.current.calibrating) gain = 0;
-          audio?.update(
-            frequency,
-            gain,
-            gate.remaining(performance.now()),
-            expression,
-            s.controlMode === "wand"
-              ? handVibrato
-              : s.gestureVibrato
-                ? (roles.pitch?.vibratoExpression ?? 0)
-                : 0,
-          );
+          const voices: { frequency: number; attack: number }[] = [];
+          if (s.controlMode === "wand") {
+            for (let slot = 0; slot < 2; slot++) {
+              const touch = pinchTouch.active.find((t) => t.voice === slot);
+              const state = voiceStates[slot];
+              if (!touch) {
+                state.filter.reset();
+                state.vibrato.reset();
+                state.target.update(null, false, false, 0);
+                audio?.silenceVoice(slot);
+                continue;
+              }
+              if (state.attack !== touch.attack) {
+                state.filter.reset();
+                state.vibrato.reset();
+                state.attack = touch.attack;
+              }
+              const position = pitchControl(touch.hand, s);
+              const target = state.target.update(
+                current.current.easyTarget,
+                current.current.latchEasyTarget,
+                true,
+                touch.attack,
+              );
+              const f = easyPitch(
+                quantize(
+                  frequencyAt(
+                    state.filter.update(position, dt, s.smoothing),
+                    s.fMin,
+                    s.fMax,
+                  ),
+                  s.scale,
+                ),
+                target,
+              );
+              const vibrato = state.vibrato.update(
+                gain > 0
+                  ? 1200 *
+                      Math.log2(frequencyAt(position, s.fMin, s.fMax) / 440)
+                  : null,
+                detectedAt,
+                touch.attack,
+              );
+              audio?.update(
+                f,
+                gain,
+                gate.remaining(performance.now()),
+                s.brightness,
+                vibrato,
+                slot,
+              );
+              voices.push({ frequency: f, attack: touch.attack });
+              if (touch.hand === roles.pitch) frequency = f;
+            }
+          } else {
+            audio?.silenceVoice(1);
+            audio?.update(
+              frequency,
+              gain,
+              gate.remaining(performance.now()),
+              expression,
+              s.gestureVibrato ? (roles.pitch?.vibratoExpression ?? 0) : 0,
+            );
+          }
           const c = canvas.current,
             ctx = c?.getContext("2d");
           if (c && ctx) {
@@ -324,7 +368,7 @@ export function useHandTracking(
             ctx.lineWidth = 3;
             for (const h of found) {
               ctx.strokeStyle =
-                h === roles.pitch
+                h === roles.pitch || pinchTouch.active.some((t) => t.hand === h)
                   ? "#67e8c2"
                   : h === roles.volume
                     ? "#c2a2ff"
@@ -345,12 +389,16 @@ export function useHandTracking(
                 ctx.fill();
               }
               const control =
-                h === roles.pitch
+                h === roles.pitch || pinchTouch.active.some((t) => t.hand === h)
                   ? pitchPoint(h, s)
                   : s.controlMode === "wand"
                     ? palmPoint(h)
                     : h.point;
-              if (h === roles.pitch && s.controlMode !== "screen") {
+              if (
+                (h === roles.pitch ||
+                  pinchTouch.active.some((t) => t.hand === h)) &&
+                s.controlMode !== "screen"
+              ) {
                 ctx.beginPath();
                 ctx.arc(
                   control.x * c.width,
@@ -365,7 +413,7 @@ export function useHandTracking(
               ctx.textAlign = "center";
               const label =
                 s.controlMode === "wand"
-                  ? h === wand
+                  ? pinchTouch.active.some((t) => t.hand === h)
                     ? "NOTA"
                     : h === roles.volume
                       ? hasOpenPalm(h)
@@ -395,6 +443,7 @@ export function useHandTracking(
             setReading({
               attack: s.controlMode === "wand" ? pinchTouch.attack : undefined,
               frequency,
+              voices,
               gain,
               volumeLevel: heldVolume,
               pitch: !!roles.pitch,

@@ -1,3 +1,4 @@
+import { matchingVoice } from "./noteMatch";
 import type { Reading } from "../types/theremin";
 import { midiFrequency, type SongNote } from "./song";
 
@@ -19,7 +20,8 @@ export function performanceMessage(hits: number, errors: number) {
 const audible = (r: Reading) => r.pitch && r.volume && r.gain > 0.002;
 const matches = (r: Reading, midi: number) =>
   audible(r) &&
-  Math.abs(1200 * Math.log2(r.frequency / midiFrequency(midi))) <= 35;
+  (!!matchingVoice(r, midi) ||
+    Math.abs(1200 * Math.log2(r.frequency / midiFrequency(midi))) <= 35);
 
 export class SongScore {
   hits = 0;
@@ -110,15 +112,16 @@ export class SongScore {
     for (const key of this.held.keys()) if (key !== hit) this.held.delete(key);
     if (hit !== undefined) {
       const note = notes[hit];
+      const attack =
+        matchingVoice(reading, note.midi)?.attack ?? reading.attack;
       const repeated =
-        this.lastHit?.midi === note.midi &&
-        this.lastHit.attack === reading.attack;
+        this.lastHit?.midi === note.midi && this.lastHit.attack === attack;
       const held = (this.held.get(hit) ?? 0) + (repeated ? 0 : dt);
       this.held.set(hit, held);
       if (held >= Math.min(250, (note.duration / speed) * 450)) {
         this.resolved.add(hit);
         this.hits++;
-        this.lastHit = { midi: note.midi, attack: reading.attack };
+        this.lastHit = { midi: note.midi, attack };
       }
     }
     for (let i = 0; i < Math.max(0, index - (easy ? 2 : 0)); i++) {

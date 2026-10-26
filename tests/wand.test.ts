@@ -91,3 +91,38 @@ it("acerto exige som e 250ms na oitava correta; repetição exige soltar", () =>
     matchNote(latched, { ...r, pitch: false, gain: 0 }, 69, 200, true).release,
   ).toBe(false);
 });
+
+it("accepts either simultaneous voice without reusing an older held pinch", () => {
+  const reading = {
+    ...emptyReading,
+    pitch: true,
+    volume: true,
+    gain: 0.1,
+    frequency: 330,
+    attack: 2,
+    voices: [
+      { frequency: 440, attack: 1 },
+      { frequency: 330, attack: 2 },
+    ],
+  };
+  let state = { ...emptyMatch };
+  for (const now of [100, 200, 300, 400])
+    state = matchNote(state, reading, 69, now, true);
+  expect(state.held).toBeGreaterThanOrEqual(250);
+  state = { ...emptyMatch, release: true, attack: 2 };
+  for (const now of [500, 600, 700, 800])
+    state = matchNote(state, reading, 69, now, true);
+  expect(state.release).toBe(true);
+  expect(state.held).toBe(0);
+  const reclosed = {
+    ...reading,
+    attack: 3,
+    voices: [
+      { frequency: 440, attack: 3 },
+      { frequency: 330, attack: 2 },
+    ],
+  };
+  for (const now of [900, 1000, 1100, 1200])
+    state = matchNote(state, reclosed, 69, now, true);
+  expect(state.held).toBeGreaterThanOrEqual(250);
+});
