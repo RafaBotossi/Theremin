@@ -17,6 +17,12 @@ import {
 import { buildEcstasy } from "../music/ecstasyScore";
 import { useSongPlayback } from "../hooks/useSongPlayback";
 import { emptyMatch, matchNote } from "../music/noteMatch";
+const songSections = [
+  { name: "Início", measure: 1 },
+  { name: "Tema principal", measure: 12 },
+  { name: "Tema grave", measure: 24 },
+  { name: "Seção final", measure: 33 },
+];
 
 export function SongPanel({
   settings,
@@ -44,6 +50,9 @@ export function SongPanel({
   const lastMovingSpeed = useRef(1);
   const [bpm, setBpm] = useState(96);
   const [startMeasure, setStartMeasure] = useState(1);
+  const selectedSection = songSections
+    .filter((section) => section.measure <= startMeasure)
+    .at(-1)!;
   const [fermata, setFermata] = useState(2);
   const scoreMelody = useMemo(
     () => buildEcstasy(bpm, startMeasure, fermata),
@@ -462,37 +471,61 @@ export function SongPanel({
           />
         </div>
 
-        <label>
-          Começar em
-          <input
-            type="range"
-            min={choice === "ecstasy" ? 1 : 0}
-            aria-label="Começar em"
-            max={
-              choice === "ecstasy"
-                ? 46
-                : Math.max(0, (melody?.notes.length ?? 1) - 1)
-            }
-            step={1}
-            disabled={!melody?.notes.length}
-            value={choice === "ecstasy" ? startMeasure : startNote}
-            aria-valuetext={
-              choice === "ecstasy"
-                ? `Compasso ${startMeasure} de 46`
-                : `Nota ${startNote + 1} de ${melody?.notes.length ?? 0}`
-            }
-            onChange={(e) => {
-              reset();
-              if (choice === "ecstasy") setStartMeasure(Number(e.target.value));
-              else setStartNote(Number(e.target.value));
-            }}
-          />
-          <span className="song-start-position">
-            {choice === "ecstasy"
-              ? `Compasso ${startMeasure} / 46`
-              : `Nota ${startNote + 1} / ${melody?.notes.length ?? 0}`}
-          </span>
-        </label>
+        <div className="song-start-control">
+          <label>
+            Começar em
+            <input
+              type="range"
+              min={choice === "ecstasy" ? 1 : 0}
+              aria-label="Começar em"
+              max={
+                choice === "ecstasy"
+                  ? 46
+                  : Math.max(0, (melody?.notes.length ?? 1) - 1)
+              }
+              step={1}
+              disabled={!melody?.notes.length}
+              value={choice === "ecstasy" ? startMeasure : startNote}
+              aria-valuetext={
+                choice === "ecstasy"
+                  ? `${selectedSection.name} · compasso ${startMeasure} de 46`
+                  : `Nota ${startNote + 1} de ${melody?.notes.length ?? 0}`
+              }
+              onChange={(e) => {
+                reset();
+                if (choice === "ecstasy")
+                  setStartMeasure(Number(e.target.value));
+                else setStartNote(Number(e.target.value));
+              }}
+            />
+            <span className="song-start-position">
+              {choice === "ecstasy"
+                ? `${selectedSection.name} · compasso ${startMeasure} / 46`
+                : `Nota ${startNote + 1} / ${melody?.notes.length ?? 0}`}
+            </span>
+          </label>
+          {choice === "ecstasy" && (
+            <div
+              className="song-section-shortcuts"
+              role="group"
+              aria-label="Partes da música"
+            >
+              {songSections.map((section) => (
+                <button
+                  key={section.measure}
+                  aria-pressed={selectedSection.measure === section.measure}
+                  onClick={() => {
+                    reset();
+                    setStartMeasure(section.measure);
+                  }}
+                >
+                  {section.name}
+                  <small>Compasso {section.measure}</small>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <button
         className="song-advanced-toggle"

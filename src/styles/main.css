@@ -13,6 +13,26 @@
   font-weight: 400;
   color-scheme: dark;
 }
+.song-start-control {
+  min-width: 0;
+}
+.song-section-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+.instrument-app .song-section-shortcuts button {
+  text-align: left;
+  font-size: 11px;
+  padding: 8px 10px;
+}
+.song-section-shortcuts small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #9aa9bc;
+}
 .song-selection {
   max-width: 520px;
 }
