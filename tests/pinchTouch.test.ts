@@ -23,10 +23,10 @@ it("closing plays, holding sustains, opening releases with hysteresis", () => {
   expect(touch.update([h], 60)).toBe(h);
   expect(touch.attack).toBe(1);
   for (let now = 90; now < 3000; now += 30) {
-    h.pinchRatio = now % 60 ? 0.3 : 0.2;
+    h.pinchRatio = now % 60 ? 0.14 : 0.1;
     expect(touch.update([h], now)).toBe(h);
   }
-  h.pinchRatio = 0.5;
+  h.pinchRatio = 0.22;
   expect(touch.update([h], 3000)).toBe(h);
   expect(touch.update([h], 3050)).toBeUndefined();
   h.pinchRatio = 0.35;
@@ -87,13 +87,13 @@ function fixture() {
   points[17] = { x: 0.5, y: 0.85, z: 0 };
   points[8] = { x: 0, y: 1.8, z: 0 };
   points[7] = { x: 0.9, y: 1.8, z: 0 };
-  points[4] = { x: 0.4, y: 1.8, z: 0 };
-  points[3] = { x: 0.4, y: 1.3, z: 0 };
+  points[4] = { x: 0.12, y: 1.8, z: 0 };
+  points[3] = { x: 0.12, y: 1.3, z: 0 };
   return points;
 }
 it("recognizes lateral pad contact under rotation, distance and palm landmark noise", () => {
   const p = fixture();
-  // Tips are 40% of a palm apart, but the finger pads are touching.
+  // Close fingertips with lateral pad contact.
   expect(pinchRatio(p)).toBeLessThan(0.15);
   for (const angle of [0, 0.5, 1.2, 1.57, 2.5])
     for (const scale of [0.02, 0.08, 2]) {
@@ -111,9 +111,9 @@ it("uses image evidence for noisy depth but rejects projected overlap of distant
   const image = fixture();
   image[4] = { x: 0.08, y: 1.8, z: 0 };
   const world = image.map((p) => ({ ...p }));
-  world[4].z = 0.45;
-  expect(pinchRatio(world)).toBeGreaterThan(0.32);
-  expect(measuredPinch(world, image)).toBeLessThan(0.32);
+  world[4].z = 0.13;
+  expect(pinchRatio(world)).toBeGreaterThan(0.12);
+  expect(measuredPinch(world, image)).toBeLessThan(0.12);
   world[4].z = 1.2;
   expect(measuredPinch(world, image)).toBeGreaterThan(0.5);
   expect(measuredPinch([], image)).toBeCloseTo(pinchRatio(image));
@@ -123,9 +123,9 @@ it("one depth spike does not retrigger, but opening or lost tracking still stops
     h = hand(0.2, 0.1);
   touch.update([h], 0);
   touch.update([h], 33);
-  h.pinchRatio = 0.6;
+  h.pinchRatio = 0.23;
   expect(touch.update([h], 66)).toBe(h);
-  h.pinchRatio = 0.2;
+  h.pinchRatio = 0.1;
   expect(touch.update([h], 99)).toBe(h);
   expect(touch.attack).toBe(1);
   h.pinchRatio = 0.9;
@@ -134,4 +134,23 @@ it("one depth spike does not retrigger, but opening or lost tracking still stops
   touch.update([h], 165);
   touch.update([h], 198);
   expect(touch.update([], 231)).toBeUndefined();
+});
+
+it("a visible fingertip gap never starts a note, even with lateral or image assistance", () => {
+  for (const gap of [0.2, 0.3, 0.4, 0.6]) {
+    const p = fixture();
+    p[4].x = gap;
+    const ratio = measuredPinch(p, p);
+    expect(ratio).toBeGreaterThan(0.12);
+    const touch = new PinchTouch(),
+      h = hand(0.2, ratio);
+    for (let now = 0; now < 500; now += 33)
+      expect(touch.update([h], now)).toBeUndefined();
+  }
+  const touch = new PinchTouch(),
+    h = hand(0.2, 0.08);
+  touch.update([h], 0);
+  expect(touch.update([h], 33)).toBe(h);
+  h.pinchRatio = 0.3;
+  expect(touch.update([h], 66)).toBeUndefined();
 });

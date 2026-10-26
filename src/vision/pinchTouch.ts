@@ -52,9 +52,13 @@ export function pinchRatio(points: Landmark[]) {
   if (![0, 4, 8, 9].every((i) => valid(points[i]))) return Infinity;
   const palm = palmSize(points);
   return palm > 1e-6
-    ? Math.min(
-        padDistance(points[4], points[8], points[7]),
-        padDistance(points[8], points[4], points[3]),
+    ? Math.max(
+        // Side contact may refine the measurement, but cannot erase a visible gap.
+        distance(points[4], points[8]) * 0.85,
+        Math.min(
+          padDistance(points[4], points[8], points[7]),
+          padDistance(points[8], points[4], points[3]),
+        ),
       ) / palm
     : Infinity;
 }
@@ -70,7 +74,7 @@ export function measuredPinch(
   const flat = image.map((p) => ({ ...p, z: 0 }));
   if (palmSize(flat) < palmSize(image) * 0.45) return spatial;
   const projected = pinchRatio(flat);
-  return Math.min(spatial, Math.max(projected, spatial * 0.65));
+  return Math.min(spatial, Math.max(projected, spatial * 0.85));
 }
 function separation(hand: Hand) {
   return hand.pinchRatio ?? pinchRatio(hand.landmarks);
@@ -118,13 +122,13 @@ export class PinchTouch {
       t.seen = now;
       // Brief depth spikes from an occluded tip should not chop a held note.
       // A clearly open hand releases immediately; borderline opening needs 45 ms.
-      if (signal >= 0.5) {
+      if (signal >= 0.2) {
         t.pending = null;
         t.releasing ??= now;
-        if (signal >= 0.8 || now - t.releasing >= 45) t.pressed = false;
+        if (signal >= 0.3 || now - t.releasing >= 45) t.pressed = false;
       } else {
         t.releasing = null;
-        if (!t.pressed && signal <= 0.32) {
+        if (!t.pressed && signal <= 0.12) {
           t.pending ??= now;
           if (now - t.pending >= 30) {
             t.pressed = true;
