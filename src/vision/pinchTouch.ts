@@ -122,13 +122,13 @@ export class PinchTouch {
       t.seen = now;
       // Brief depth spikes from an occluded tip should not chop a held note.
       // A clearly open hand releases immediately; borderline opening needs 45 ms.
-      if (signal >= 0.2) {
+      if (signal >= 0.33) {
         t.pending = null;
         t.releasing ??= now;
-        if (signal >= 0.3 || now - t.releasing >= 45) t.pressed = false;
+        if (signal >= 0.48 || now - t.releasing >= 45) t.pressed = false;
       } else {
         t.releasing = null;
-        if (!t.pressed && signal <= 0.12) {
+        if (!t.pressed && signal <= 0.23) {
           t.pending ??= now;
           if (now - t.pending >= 30) {
             t.pressed = true;
