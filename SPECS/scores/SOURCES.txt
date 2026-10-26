@@ -28,3 +28,23 @@ registro Sol3–Sol4; ignorada a oitava da clave de gaita.
 Todas as melodias são solo, sem acompanhamento, sintetizadas pelo motor
 existente. Velocidade do guia e reprodução aplicam-se aos tempos-base acima.
 Os arquivos-fonte estão arquivados aqui; o site não precisa baixá-los em execução.
+
+Cinco melodias fáceis adicionadas em 2026-10-25:
+As sequências abaixo são adaptações solo de estudo das melodias tradicionais,
+inseridas diretamente em src/music/beginnerSongs.ts. Não foram copiados
+acompanhamentos, letras, gravações nem arranjos comerciais modernos.
+Os links servem como referência de identificação e histórico, não como
+dependência do aplicativo. Não há novos PDFs ou downloads em execução.
+
+Frère Jacques: https://en.wikipedia.org/wiki/Fr%C3%A8re_Jacques
+Uma exposição da melodia, sem cânone; Dó, 8 compassos 4/4, 60 BPM.
+Mary Had a Little Lamb: https://en.wikipedia.org/wiki/Mary_Had_a_Little_Lamb
+Uma estrofe instrumental; Dó, 8 compassos 4/4, 60 BPM, final sustentado.
+Hot Cross Buns: https://en.wikipedia.org/wiki/Hot_Cross_Buns_(song)
+Dó, Ré e Mi; 4 compassos 4/4, 60 BPM, notas repetidas para praticar articulação.
+London Bridge: https://en.wikipedia.org/wiki/London_Bridge_Is_Falling_Down
+Uma estrofe instrumental; Dó, 8 compassos 4/4, 60 BPM; abertura pontuada.
+Row, Row, Row Your Boat: https://en.wikipedia.org/wiki/Row,_Row,_Row_Your_Boat
+Uma exposição, sem cânone; Dó4–Dó5, 4 compassos 12/8.
+Cada beat do código é uma semínima pontuada; 40 BPM, colcheias com duração
+de 1/3 de beat. A duração total é 24 segundos, mantendo a subdivisão ternária.

@@ -6,6 +6,11 @@ it.each([
   ["ode-joy", 64, 16, 64],
   ["little-star", 48, 24, 60],
   ["amazing-grace", 60, 17, 55],
+  ["frere-jacques", 32, 8, 60],
+  ["mary-lamb", 32, 8, 64],
+  ["hot-cross-buns", 16, 4, 64],
+  ["london-bridge", 32, 8, 67],
+  ["row-your-boat", 24, 4, 60],
 ])(
   "preserves the complete solo timeline for %s",
   (id, duration, bars, first) => {
@@ -17,7 +22,7 @@ it.each([
     for (const [i, note] of notes.entries()) {
       expect(note.duration).toBeGreaterThan(0);
       expect(note.midi).toBeGreaterThanOrEqual(55);
-      expect(note.midi).toBeLessThanOrEqual(69);
+      expect(note.midi).toBeLessThanOrEqual(72);
       if (i)
         expect(note.start).toBeCloseTo(
           notes[i - 1].start + notes[i - 1].duration,
