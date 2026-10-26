@@ -154,7 +154,7 @@ export function SongPanel({
     const index = nextIndex % notes.length;
     match.current = {
       ...emptyMatch,
-      release: notes[index].midi === notes[noteIndex].midi,
+      release: true,
       attack: reading.attack,
     };
     setNoteIndex(index);
@@ -203,6 +203,7 @@ export function SongPanel({
       enabled
         ? {
             active: true,
+            latchEasyTarget: practice && easy && status === "playing",
             easyTarget:
               easy && status === "playing" && time >= 0 && !playback.listening
                 ? practice

@@ -20,7 +20,7 @@ import { emptyReading, type Hand, type Settings } from "../types/theremin";
 import { hasOpenPalm, palmPoint } from "../vision/openPalm";
 import { PinchTouch, selectOpenPalm } from "../vision/pinchTouch";
 import { VolumeLatch, loadVolume } from "../mapping/volumeLatch";
-import { easyPitch, type EasyTarget } from "../music/easyPitch";
+import { easyPitch, PinchTarget, type EasyTarget } from "../music/easyPitch";
 const connections = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -34,11 +34,24 @@ export function useHandTracking(
   muted: boolean,
   calibrating: boolean,
   easyTarget: EasyTarget = null,
+  latchEasyTarget = false,
 ) {
   const video = useRef<HTMLVideoElement>(null),
     canvas = useRef<HTMLCanvasElement>(null);
-  const current = useRef({ settings, muted, calibrating, easyTarget });
-  current.current = { settings, muted, calibrating, easyTarget };
+  const current = useRef({
+    settings,
+    muted,
+    calibrating,
+    easyTarget,
+    latchEasyTarget,
+  });
+  current.current = {
+    settings,
+    muted,
+    calibrating,
+    easyTarget,
+    latchEasyTarget,
+  };
   const [status, setStatus] = useState<"idle" | "loading" | "running">("idle");
   const [error, setError] = useState("");
   const [reading, setReading] = useState(() => ({
@@ -148,6 +161,7 @@ export function useHandTracking(
       let wand: Hand | undefined;
       let volumeHand: Hand | undefined;
       const pinchTouch = new PinchTouch();
+      const pinchTarget = new PinchTarget();
       const volumeLatch = new VolumeLatch(loadVolume());
       let heldVolume = volumeLatch.value;
       timer = window.setInterval(() => {
@@ -228,6 +242,12 @@ export function useHandTracking(
             s.controlMode === "wand" || !!roles.volume,
           );
           let gain = 0;
+          const target = pinchTarget.update(
+            current.current.easyTarget,
+            current.current.latchEasyTarget,
+            !!roles.pitch,
+            pinchTouch.attack,
+          );
           if (roles.pitch) {
             expression =
               s.gestureTone && s.controlMode === "screen"
@@ -245,7 +265,7 @@ export function useHandTracking(
             );
             frequency = easyPitch(
               quantize(frequencyAt(t, s.fMin, s.fMax), s.scale),
-              current.current.easyTarget,
+              target,
             );
           } else if (!safe) pitchFilter.reset();
           if (s.controlMode === "wand") {

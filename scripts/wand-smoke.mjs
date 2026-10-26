@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+﻿import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 const browser = await chromium.launch({
   channel: "chrome",
@@ -14,9 +14,17 @@ try {
     permissions: ["camera"],
   });
   const errors = [];
+  page.setDefaultTimeout(15000);
   page.on("pageerror", (e) => errors.push(e.message));
   await page.addInitScript(() => {
     localStorage.clear();
+    window.recordingBlobs = new Map();
+    const createURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (blob) => {
+      const url = createURL(blob);
+      window.recordingBlobs.set(url, blob);
+      return url;
+    };
     window.hands = [
       { x: 0.5, y: 0.5, label: "Left", straight: true, pinch: 0.8 },
       {
@@ -91,6 +99,59 @@ try {
     window.hands[0].pinch = 0.1;
   });
   await page.waitForFunction(() => window.level() > 0.001);
+  await page.getByRole("button", { name: "Gravar", exact: true }).click();
+  await page.waitForTimeout(2200);
+  await page.getByRole("button", { name: "Encerrar gravação" }).click();
+  const download = page.locator("a.download");
+  await download.waitFor();
+  if ((await download.getAttribute("download")) !== "air-theremin.mp4")
+    throw Error("Recording is not named MP4");
+  const recording = await page.evaluate(async () => {
+    const url = document.querySelector("a.download").href;
+    const blob = window.recordingBlobs.get(url);
+    const bytes = await blob.arrayBuffer();
+    const header = new TextDecoder().decode(bytes.slice(4, 8));
+    const video = document.createElement("video");
+    video.src = url;
+    video.style.cssText =
+      "position:fixed;inset:0;width:100%;height:100%;z-index:9999;background:black";
+    document.body.append(video);
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = resolve;
+      video.onerror = reject;
+    });
+    const audio = await window.contexts[0].decodeAudioData(bytes.slice(0));
+    let peak = 0;
+    for (const sample of audio.getChannelData(0))
+      peak = Math.max(peak, Math.abs(sample));
+    await video.play();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    window.recordedVideo = video;
+    return {
+      type: blob.type,
+      header,
+      width: video.videoWidth,
+      height: video.videoHeight,
+      duration: audio.duration,
+      peak,
+    };
+  });
+  if (
+    recording.header !== "ftyp" ||
+    !recording.type.includes("mp4") ||
+    recording.width < 100 ||
+    recording.duration < 1.5 ||
+    recording.peak < 0.001
+  )
+    throw Error(
+      `Invalid video or audio recording: ${JSON.stringify(recording)}`,
+    );
+  await mkdir("test-results", { recursive: true });
+  await page.screenshot({ path: "test-results/recording-playback.png" });
+  await page.evaluate(() => {
+    window.recordedVideo.pause();
+    window.recordedVideo.remove();
+  });
   const held = await page.locator("meter").evaluate((e) => e.value);
   const palm = await page.evaluate(() => window.hands.pop());
   await page.waitForTimeout(1000);
@@ -146,6 +207,44 @@ try {
     throw Error("Volume was not latched");
   if (await page.locator(".hand-swap").count())
     throw Error("Hand inversion still visible");
+  await page.locator(".song-selection select").selectOption("demo");
+  await page.getByRole("button", { name: "Acertar para avançar" }).click();
+  await page.getByRole("button", { name: "INICIAR", exact: true }).click();
+  const targetX = await page
+    .locator(".song-target")
+    .evaluate((el) => parseFloat(el.style.left) / 100);
+  await page.evaluate((x) => {
+    window.hands = [{ x, y: 0.5, pinch: 0.8, straight: true, palmOpen: false }];
+  }, targetX);
+  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    window.hands[0].pinch = 0.1;
+  });
+  await page.waitForFunction(() =>
+    document.querySelector(".song-camera-cue")?.textContent.includes("2/"),
+  );
+  await page.waitForTimeout(1000);
+  if (!(await page.locator(".song-camera-cue").textContent()).includes("2/"))
+    throw Error("Held pinch advanced through several notes");
+  const firstFrequency = await page.evaluate(() => window.manual().frequency);
+  if (Math.abs(firstFrequency - 261.63) > 5)
+    throw Error(`Easy retuned held C: ${firstFrequency}`);
+  await page.evaluate(() => {
+    window.hands[0].pinch = 0.8;
+  });
+  await page.waitForFunction(() => window.level() < 0.0001);
+  await page.evaluate(() => {
+    window.hands[0].pinch = 0.1;
+  });
+  await page.waitForFunction(() =>
+    document.querySelector(".song-camera-cue")?.textContent.includes("3/"),
+  );
+  await page.waitForTimeout(1000);
+  const secondFrequency = await page.evaluate(() => window.manual().frequency);
+  if (Math.abs(secondFrequency - 293.66) > 5)
+    throw Error(`Fresh pinch did not play D: ${secondFrequency}`);
+  if (!(await page.locator(".song-camera-cue").textContent()).includes("3/"))
+    throw Error("Second pinch advanced more than one note");
   await mkdir("test-results", { recursive: true });
   await page.screenshot({ path: "test-results/pinch-touch-desktop.png" });
   const report = {
@@ -154,6 +253,8 @@ try {
     eitherIndex: true,
     eitherPalm: true,
     latchedVolume: true,
+    recording,
+    stepPractice: { firstFrequency, secondFrequency },
     errors,
   };
   await writeFile(
@@ -165,3 +266,4 @@ try {
 } finally {
   await browser.close();
 }
+

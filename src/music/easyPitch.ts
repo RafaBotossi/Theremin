@@ -2,6 +2,20 @@ import { midiFrequency, type SongNote } from "./song";
 
 export type EasyTarget = number | readonly number[] | null;
 
+// In step practice, a new guide target must not retune an existing pinch.
+export class PinchTarget {
+  private target: EasyTarget = null;
+  private attack: number | undefined;
+  private held = false;
+  update(target: EasyTarget, latch: boolean, playing: boolean, attack: number) {
+    if (!latch || !playing || !this.held || this.attack !== attack)
+      this.target = target;
+    this.held = latch && playing;
+    this.attack = attack;
+    return this.target;
+  }
+}
+
 // Current note first; ties favor the current note, then its closest neighbors.
 export function easyWindow(notes: SongNote[], time: number): number[] {
   if (time < 0 || !notes.length) return [];

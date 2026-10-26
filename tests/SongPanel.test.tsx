@@ -109,8 +109,26 @@ it("nota por nota aguarda acerto e não revela o próximo alvo", () => {
     );
   }
   expect(onGuide.mock.lastCall?.[0]).toMatchObject({ current: 62, next: null });
-  act(() => vi.advanceTimersByTime(20000));
+  const nextReading = {
+    ...emptyReading,
+    pitch: true,
+    volume: true,
+    gain: 0.1,
+    frequency: 440 * 2 ** ((62 - 69) / 12),
+  };
+  for (let i = 0; i < 10; i++) {
+    act(() => vi.advanceTimersByTime(100));
+    view.rerender(<SongPanel {...props} reading={{ ...nextReading }} />);
+  }
   expect(onGuide.mock.lastCall?.[0].current).toBe(62);
+  view.rerender(<SongPanel {...props} reading={emptyReading} />);
+  for (let i = 0; i < 5; i++) {
+    act(() => vi.advanceTimersByTime(100));
+    view.rerender(<SongPanel {...props} reading={{ ...nextReading }} />);
+  }
+  expect(onGuide.mock.lastCall?.[0].current).toBe(64);
+  act(() => vi.advanceTimersByTime(20000));
+  expect(onGuide.mock.lastCall?.[0].current).toBe(64);
   view.rerender(
     <SongPanel
       {...props}

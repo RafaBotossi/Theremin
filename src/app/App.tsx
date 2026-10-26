@@ -9,6 +9,7 @@ import { AntennaOverlay } from "../components/AntennaOverlay";
 import { SongPanel } from "../components/SongPanel";
 import { emptyGuide } from "../music/song";
 import { AudioLab } from "../components/AudioLab";
+import { captureStage, mp4RecordingType } from "../audio/stageRecording";
 export function App() {
   const [lab, setLab] = useState(false);
   const [settings, setSettings] = useState(loadSettings),
@@ -24,8 +25,10 @@ export function App() {
     muted || songGuide.listening,
     calibrating,
     songGuide.easyTarget ?? null,
+    songGuide.latchEasyTarget ?? false,
   );
   const recorder = useRef<MediaRecorder | null>(null);
+  const recordingCleanup = useRef<() => void>(() => {});
   const clipRef = useRef("");
   const running = session.status === "running";
   const r = session.reading;
@@ -63,20 +66,46 @@ export function App() {
       return;
     }
     try {
-      const mime = [
-        "audio/webm;codecs=opus",
-        "audio/mp4",
-        "audio/ogg;codecs=opus",
-      ].find((m) => MediaRecorder.isTypeSupported(m));
+      const mime = mp4RecordingType();
+      if (!mime) {
+        setNotice(
+          "Este navegador não oferece gravação MP4. Tente em uma versão atual do Chrome, Edge ou Safari.",
+        );
+        return;
+      }
+      if (!session.video.current || !session.canvas.current) return;
+      const capture = captureStage(
+        session.video.current,
+        session.canvas.current,
+      );
+      const audioTracks = engine.destination.stream
+        .getAudioTracks()
+        .map((track) => track.clone());
+      const cleanup = () => {
+        capture.dispose();
+        audioTracks.forEach((track) => track.stop());
+      };
+      recordingCleanup.current = cleanup;
       const rec = new MediaRecorder(
-        engine.destination.stream,
-        mime ? { mimeType: mime } : undefined,
+        new MediaStream([...capture.stream.getVideoTracks(), ...audioTracks]),
+        {
+          mimeType: mime,
+          videoBitsPerSecond: 4_000_000,
+          audioBitsPerSecond: 192_000,
+        },
       );
       const chunks: BlobPart[] = [];
       rec.ondataavailable = (e) => {
         if (e.data.size) chunks.push(e.data);
       };
       rec.onstop = () => {
+        cleanup();
+        if (recorder.current === rec) {
+          recorder.current = null;
+          recordingCleanup.current = () => {};
+          setRecording(false);
+        }
+        if (!chunks.length) return;
         URL.revokeObjectURL(clipRef.current);
         const url = URL.createObjectURL(
           new Blob(chunks, { type: rec.mimeType }),
@@ -84,26 +113,34 @@ export function App() {
         clipRef.current = url;
         setClip({
           url,
-          ext: rec.mimeType.includes("mp4")
-            ? "m4a"
-            : rec.mimeType.includes("ogg")
-              ? "ogg"
-              : "webm",
+          ext: "mp4",
         });
+      };
+      rec.onerror = () => {
+        cleanup();
+        setRecording(false);
+        setNotice(
+          "A gravação MP4 foi interrompida pelo navegador. Tente gravar novamente.",
+        );
       };
       recorder.current = rec;
       rec.start(1000);
       setRecording(true);
+      setNotice("");
     } catch {
-      setNotice("Não foi possível iniciar a gravação de áudio.");
+      recordingCleanup.current();
+      recordingCleanup.current = () => {};
+      setNotice("Não foi possível iniciar a gravação MP4.");
     }
   }
   useEffect(
     () => () => {
       if (recorder.current) {
         recorder.current.onstop = null;
+        recorder.current.onerror = null;
         if (recorder.current.state === "recording") recorder.current.stop();
       }
+      recordingCleanup.current();
       URL.revokeObjectURL(clipRef.current);
     },
     [],

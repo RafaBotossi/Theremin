@@ -1,8 +1,21 @@
 import { expect, it } from "vitest";
-import { easyPitch, easyWindow } from "../src/music/easyPitch";
+import { easyPitch, easyWindow, PinchTarget } from "../src/music/easyPitch";
 import { midiFrequency } from "../src/music/song";
 import { emptyMatch, matchNote, type MatchState } from "../src/music/noteMatch";
 import { emptyReading } from "../src/types/theremin";
+it("keeps the Easy target throughout a pinch and changes it only on a fresh attack", () => {
+  const latch = new PinchTarget();
+  expect(latch.update(60, true, true, 1)).toBe(60);
+  for (let i = 0; i < 30; i++) {
+    const target = latch.update(62, true, true, 1);
+    expect(easyPitch(midiFrequency(61), target)).toBe(midiFrequency(60));
+  }
+  latch.update(62, true, false, 1);
+  expect(latch.update(62, true, true, 2)).toBe(62);
+  expect(latch.update(64, true, true, 3)).toBe(64);
+  expect(latch.update(65, false, true, 3)).toBe(65);
+  expect(latch.update(null, false, true, 3)).toBeNull();
+});
 it("corrects up to three semitones on either side of the target, without changing distant notes", () => {
   for (const target of [48, 69, 84]) {
     for (const offset of [-3, -2, -1, -0.8, 0, 0.8, 1, 2, 3])
