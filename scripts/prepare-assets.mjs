@@ -13,6 +13,10 @@ await cp(
 );
 const files = [
   [
+    "selfie_segmenter.tflite",
+    "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite",
+  ],
+  [
     "hand_landmarker.task",
     "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
   ],
@@ -48,7 +52,13 @@ await writeFile(
       package: "@mediapipe/tasks-vision",
       version: pkg.version,
       license: pkg.license,
-      model: files[0][1],
+      model: files[1][1],
+      backgroundModel: {
+        url: files[0][1],
+        sha256: createHash("sha256")
+          .update(await readFile(new URL("selfie_segmenter.tflite", root)))
+          .digest("hex"),
+      },
       modelVersion: "float16/1",
       sha256: hash,
       source: "https://github.com/google-ai-edge/mediapipe",

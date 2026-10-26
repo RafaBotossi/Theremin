@@ -9,6 +9,7 @@ import { AntennaOverlay } from "../components/AntennaOverlay";
 import { SongPanel } from "../components/SongPanel";
 import { emptyGuide } from "../music/song";
 import { AudioLab } from "../components/AudioLab";
+import { MusicalBackground } from "../components/MusicalBackground";
 import { captureStage, mp4RecordingType } from "../audio/stageRecording";
 export function App() {
   const [lab, setLab] = useState(false);
@@ -203,6 +204,18 @@ export function App() {
           <button disabled={!running} aria-pressed={recording} onClick={record}>
             {recording ? "Encerrar gravação" : "Gravar"}
           </button>
+          <button
+            aria-pressed={settings.musicalBackground}
+            onClick={() =>
+              update({
+                ...settings,
+                musicalBackground: !settings.musicalBackground,
+              })
+            }
+            title="Trocar o fundo atrás da pessoa por um cenário musical"
+          >
+            ♫ Fundo
+          </button>
         </div>
         {clip && (
           <a
@@ -224,6 +237,9 @@ export function App() {
               playsInline
               aria-label="Preview espelhado da webcam"
             />
+            {running && settings.musicalBackground && (
+              <MusicalBackground video={session.video} onError={setNotice} />
+            )}
             <canvas ref={session.canvas} aria-label="Esqueleto das mãos" />
             {settings.controlMode === "antennas" && (
               <AntennaOverlay settings={settings} />

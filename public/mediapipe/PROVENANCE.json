@@ -6,5 +6,9 @@
   "modelVersion": "float16/1",
   "sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
   "source": "https://github.com/google-ai-edge/mediapipe",
-  "notes": "MediaPipe code and model: Apache-2.0. Preserve this notice and the bundled license. Assets served locally; no runtime CDN."
+  "notes": "MediaPipe code and model: Apache-2.0. Preserve this notice and the bundled license. Assets served locally; no runtime CDN.",
+  "backgroundModel": {
+    "url": "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite",
+    "sha256": "191ac9529ae506ee0beefa6b2c945a172dab9d07d1e802a290a4e4038226658b"
+  }
 }

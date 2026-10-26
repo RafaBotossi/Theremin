@@ -68,3 +68,25 @@ sob a mesma licença. Solo inicial do corne inglês (oboeIImL), compassos
 7–18. Sem a introdução orquestral. Notas escritas transpostas 8 semitons
 abaixo, equivalendo à melodia em som real de Ré bemol transposta para Dó.
 Ritmos preservados, 12 compassos 4/4, semínima = 48: 60 segundos.
+
+Moonlight e Gymnopédie nº 1, adicionadas em 2026-10-26, nível Médio:
+
+medium/moonlight-1.ly, extraído de:
+https://www.mutopiaproject.org/ftp/BeethovenLv/O27/moonlight/moonlight-lys.zip
+Beethoven, Sonata Op. 27 nº 2, primeiro movimento. Edição Stewart Holmes,
+© 2007, Mutopia-2007/02/11-276, CC BY-SA 2.5.
+https://creativecommons.org/licenses/by-sa/2.5/
+A adaptação moonlight em src/music/mediumSongs.ts está sob a mesma licença.
+Compassos 1–4: voz de arpejos (topsecondary), sem baixo. Compassos 5–9:
+melodia superior (topmain), sem acompanhamento. Ritmos preservados,
+semínima = 44; mantida a pausa antes da entrada da melodia, omitida apenas
+a pausa depois do último Mi. Si sustenido escrito como Dó enarmônico.
+33 semínimas, duração 45 segundos; tonalidade original Dó sustenido menor.
+
+medium/gymnopedie-1.ly:
+https://www.mutopiaproject.org/ftp/SatieE/gymnopedie_1/gymnopedie_1.ly
+Satie, Gymnopédie nº 1; edição Evin Robertson, Mutopia-2014/12/14-37,
+domínio público. Melodia superior dos compassos 5–12, sem introdução,
+baixo ou acordes. A pausa inicial é mantida e a ligadura final de quatro
+compassos é uma única nota Fá sustenido de 12 beats. 24 beats, 3/4,
+semínima = 40, duração 36 segundos.

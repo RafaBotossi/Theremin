@@ -18,6 +18,12 @@ if (provenance.version !== pkg.version)
     "MediaPipe assets e pacote divergem. Execute npm run assets.",
   );
 const model = await readFile(new URL("hand_landmarker.task", root));
+const background = await readFile(new URL("selfie_segmenter.tflite", root));
+if (
+  createHash("sha256").update(background).digest("hex") !==
+  provenance.backgroundModel?.sha256
+)
+  throw new Error("Checksum do modelo de fundo inválido.");
 if (createHash("sha256").update(model).digest("hex") !== provenance.sha256)
   throw new Error("Checksum do modelo inválido.");
 for (const file of [

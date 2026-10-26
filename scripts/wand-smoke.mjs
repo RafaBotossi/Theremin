@@ -61,6 +61,12 @@ try {
     throw Error("Circular antenna still shown");
   await page.getByRole("button", { name: "Iniciar câmera e áudio" }).click();
   await page.locator(".camera-stage.live").waitFor();
+  if (process.env.TEST_BACKGROUND) {
+    await page.getByRole("button", { name: "♫ Fundo", exact: true }).click();
+    await page
+      .locator('canvas[data-musical-background][data-ready="true"]')
+      .waitFor();
+  }
   await page.waitForFunction(
     () => document.querySelector("meter").value > 0.01,
   );

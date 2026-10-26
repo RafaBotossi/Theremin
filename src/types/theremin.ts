@@ -14,6 +14,7 @@ export interface Hand {
   vibratoExpression?: number;
 }
 export interface Settings {
+  musicalBackground: boolean;
   handLayoutVersion: number;
   controlMode: "antennas" | "screen" | "wand";
   antennaX: number;
@@ -54,6 +55,7 @@ export interface Settings {
   delay: number;
 }
 export const defaults: Settings = {
+  musicalBackground: false,
   handLayoutVersion: 4,
   controlMode: "wand",
   antennaX: 0.9,

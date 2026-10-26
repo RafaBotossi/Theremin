@@ -50,6 +50,44 @@ const minuetA = [
 ];
 export const mediumSongs: StudySong[] = [
   {
+    id: "moonlight",
+    label: "Moonlight · Sonata ao Luar · Beethoven",
+    melody: score("Moonlight · introdução e primeiro tema", 44, [
+      Array(4)
+        .fill(`G#3:${1 / 3} C#4:${1 / 3} E4:${1 / 3}`)
+        .join(" "),
+      Array(4)
+        .fill(`G#3:${1 / 3} C#4:${1 / 3} E4:${1 / 3}`)
+        .join(" "),
+      `A3:${1 / 3} C#4:${1 / 3} E4:${1 / 3} A3:${1 / 3} C#4:${1 / 3} E4:${1 / 3} A3:${1 / 3} D4:${1 / 3} F#4:${1 / 3} A3:${1 / 3} D4:${1 / 3} F#4:${1 / 3}`,
+      `G#3:${1 / 3} C4:${1 / 3} F#4:${1 / 3} G#3:${1 / 3} C#4:${1 / 3} E4:${1 / 3} G#3:${1 / 3} C#4:${1 / 3} D#4:${1 / 3} F#3:${1 / 3} C4:${1 / 3} D#4:${1 / 3}`,
+      "-:3 G#4:0.75 G#4:0.25",
+      "G#4:3 G#4:0.75 G#4:0.25",
+      "G#4:2 A4:2",
+      "G#4:2 F#4 B4",
+      "E4",
+    ]),
+    source: "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=276",
+    credit:
+      "Beethoven · edição Stewart Holmes, © 2007. Primeiro movimento, compassos 1–9: arpejos iniciais, depois melodia superior sem acompanhamento. Dó sustenido menor, semínima = 44; pausa final omitida.",
+    license: "https://creativecommons.org/licenses/by-sa/2.5/",
+    licenseName: "CC BY-SA 2.5",
+  },
+  {
+    id: "gymnopedie-1",
+    label: "Gymnopédie nº 1 · Satie · tema",
+    melody: score("Gymnopédie nº 1 · primeiro tema", 40, [
+      "- F#5 A5",
+      "G5 F#5 C#5",
+      "B4 C#5 D5",
+      "A4:3",
+      "F#4:12",
+    ]),
+    source: "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=37",
+    credit:
+      "Satie · edição Evin Robertson, domínio público. Melodia dos compassos 5–12; sem introdução e acompanhamento. 3/4, semínima = 40. Ligadura final preservada em uma nota longa.",
+  },
+  {
     id: "fur-elise",
     label: "Für Elise · Beethoven · tema",
     melody: score("Für Elise · tema inicial", 60, [

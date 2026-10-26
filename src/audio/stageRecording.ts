@@ -33,11 +33,15 @@ export function captureStage(
         h = video.videoHeight * fit;
       const x = (box.width - w) / 2,
         y = (box.height - h) / 2;
+      const background = stage.querySelector<HTMLCanvasElement>(
+        'canvas[data-musical-background][data-ready="true"]',
+      );
       ctx.save();
       ctx.translate(box.width, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(video, x, y, w, h);
+      if (!background) ctx.drawImage(video, x, y, w, h);
       ctx.restore();
+      if (background) ctx.drawImage(background, 0, 0, box.width, box.height);
       if (skeleton.width && skeleton.height)
         ctx.drawImage(skeleton, x, y, w, h);
     }

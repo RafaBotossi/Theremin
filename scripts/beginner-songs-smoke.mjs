@@ -45,6 +45,8 @@ try {
     "ave-maria",
     "fur-elise",
     "new-world-largo",
+    "moonlight",
+    "gymnopedie-1",
   ]) {
     if (id === "greensleeves")
       await page.locator(".song-level select").selectOption("medium");
